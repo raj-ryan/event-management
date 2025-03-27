@@ -1,4 +1,15 @@
-# Redirects for Netlify
+# SPA fallback for client-side routing
+/*  /index.html  200
+
+# Netlify Functions API
 /api/*  /.netlify/functions/api/:splat  200
-/ws     /.netlify/functions/ws          200
-/*      /index.html                     200
+/ws/*  /.netlify/functions/ws/:splat  101
+
+# Serve netlify-verify.js directly to check deployment
+/netlify-verify.js /netlify-verify.js 200
+
+# Serve the netlify guide documentation
+/netlify-env-guide.md /netlify-env-guide.md 200
+
+# Redirect /api to our API documentation
+/api  /api-docs/index.html  200

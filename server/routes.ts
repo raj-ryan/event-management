@@ -60,6 +60,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
+  // Database setup endpoint for Netlify deployment
+  app.get("/api/setup-database", async (req, res) => {
+    try {
+      // Create a default admin user
+      const adminUser = await ensureDefaultDemoUser();
+      
+      // Create some example venues if none exist
+      const venues = await storage.getVenues(1);
+      let venueResults = [];
+      
+      if (venues.length === 0) {
+        const venueData = [
+          {
+            name: "Grand Conference Center",
+            address: "123 Main Street, Metropolis",
+            city: "Metropolis",
+            state: "NY",
+            zipCode: "10001",
+            capacity: 500,
+            description: "A modern conference center in the heart of the city with state-of-the-art facilities.",
+            amenities: ["Wi-Fi", "Projector", "Sound System", "Catering"],
+            images: ["https://example.com/venue1.jpg"],
+            contactEmail: "info@grandconference.com",
+            contactPhone: "555-123-4567",
+            pricePerHour: 250,
+            createdBy: adminUser.id
+          }
+        ];
+        
+        for (const venue of venueData) {
+          try {
+            const result = await storage.createVenue(venue);
+            venueResults.push(result);
+          } catch (error) {
+            console.error("Error creating sample venue:", error);
+          }
+        }
+      }
+      
+      res.json({
+        status: "Database setup complete",
+        message: "Database schema has been initialized successfully",
+        adminUser,
+        venues: venueResults
+      });
+    } catch (error) {
+      console.error("Database setup error:", error);
+      res.status(500).json({ 
+        status: "error",
+        message: "Failed to set up database",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+  
   // Set up authentication routes
   setupAuth(app);
   
