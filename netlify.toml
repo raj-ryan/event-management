@@ -40,3 +40,6 @@
   status = 200
   force = true
 
+# Remove plugin reference as it's not available in npm registry
+# [[plugins]]
+#  package = "@netlify/plugin-functions-core"

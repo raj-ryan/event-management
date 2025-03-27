@@ -1,0 +1,124 @@
+Build & deploy settings
+Continuous deployment
+Configuration for continuous deployment from a Git repository
+
+Repository
+Your site is linked to a Git repository for continuous deployment.
+Current repository
+github.com/raj-ryan/event-management-
+Learn more about continuous deployment in the docs
+
+Manage repository
+Build settings
+Runtime
+Not set
+Base directory
+/
+Package directory
+Not set
+Build command
+npm run build
+Publish directory
+dist
+Functions directory
+netlify/functions
+Deploy log visibility
+Logs are public
+Build status
+Active
+Learn more about configuring builds in the docs
+
+Configure
+Functions region
+Configure how functions are deployed for your site.
+Region
+US East (Ohio) - us-east-2
+Learn more about functions region in the docs
+
+Upgrade to customizeregion
+Dependency management
+Manage the software and tool versions installed in the build environment for your site.
+Node.js
+22.x
+Learn more about dependency management in the docs
+
+Configure
+Branches and deploy contexts
+Deploy contexts are branch-based environments that enable you to configure builds depending on the context. This includes production and preview environments.
+Production branch
+main
+Branch deploys
+Deploy only the production branch
+Deploy Previews
+Any pull request against your production branch / branch deploy branches
+Learn more about branches and deploys in the docs
+
+Configure
+Collaboration tools
+The Netlify Drawer enables your team to collaborate on preview environments before changes go live to production. Discuss changes, file new issues, or annotate screenshots directly from a preview context.
+
+Netlify Drawer
+Enabled on Deploy Previews
+Heads-up display:
+Disabled
+Learn more about collaboration tools in the docs
+
+Configure
+Build hooks
+Build hooks give you a unique URL you can use to trigger a build.
+Learn more about build hooks in the docs
+
+Add build hook
+Deploy key
+A deploy key grants permissions to our build system to access your private submodule.
+Learn more about deploy keys in the docs
+
+Generate public deploy key
+Build image selection
+Select a different build image to change the operating system and supported software versions in the environment where our buildbot builds your site.
+Build image
+Ubuntu Noble 24.04 (default)
+Learn more about build image selection in the docs
+
+Configure
+Automatic deploy deletion
+Control when deploys are automatically deleted. Netlify will not automatically delete the deploy currently published on your site, nor the most recent successful deploy from a Git branch.
+Delete deploys after
+90 days
+Learn more about deploy deletion in the docs
+
+Upgrade to customizeautomatic deploy deletion
+Post processing
+Control the post processing and optimizations Netlify can do for you
+
+Snippet injection
+Inject analytics or other scripts into the HTML of your site.
+Learn more about snippet injection in the docs
+
+Add snippet
+Pretty URLs
+Pretty URLs are enabled.
+
+Learn more about Pretty URLs in the docs
+
+Configure
+Prerendering
+Beta
+Enable prerendering to allow crawlers used by search engines and social networks to see the pages rendered by your app.
+
+Learn more about prerendering in the docs
+
+Configure
+Split Testing Beta
+Simple yet powerful split testing at the edge node. Test alternate designs or gradually roll out features by serving multiple Branch Deploys and distributing them across users.
+
+Learn more about Split Testing in the docs
+
+Get started with Split Testing
+This feature requires branch deploys
+
+Activate branch deploys and push changes to the branches you want to test.
+
+Activate branch deploys
+Deploy notifications
+Set up outgoing webhooks to notify other services about deploys for your site.
