@@ -65,13 +65,15 @@ const eventFormSchema = z.object({
 
 type EventFormValues = z.infer<typeof eventFormSchema>;
 
-// Mock venue data (will be replaced with API data later)
-const mockVenues = [
-  { id: 1, name: 'Convention Center', city: 'New York', capacity: 1000 },
-  { id: 2, name: 'Grand Ballroom', city: 'Los Angeles', capacity: 500 },
-  { id: 3, name: 'Botanical Gardens', city: 'Chicago', capacity: 300 },
-  { id: 4, name: 'Luxury Hotel Ballroom', city: 'Miami', capacity: 250 },
-];
+// Define venue interface
+interface Venue {
+  id: number;
+  name: string;
+  city: string;
+  capacity: number;
+  address?: string;
+  price?: number;
+}
 
 export default function EventForm() {
   const [match, params] = useRoute('/events/edit/:id');
@@ -79,7 +81,7 @@ export default function EventForm() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [venues, setVenues] = useState(mockVenues);
+  const [venues, setVenues] = useState<Venue[]>([]);
   
   // Determine if this is edit mode based on the route
   const isEditMode = Boolean(match && params?.id);
@@ -108,20 +110,9 @@ export default function EventForm() {
     queryKey: ['/api/events', params?.id],
     queryFn: async () => {
       if (!isEditMode) return null;
-      // In a real app, this would fetch from an API
-      // For now, return mock data
-      return {
-        id: parseInt(params!.id),
-        name: 'Annual Tech Conference',
-        description: 'The largest tech conference in the city.',
-        date: new Date('2025-04-15'),
-        endDate: null,
-        venueId: 1,
-        capacity: 500,
-        price: 99,
-        image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87',
-        status: 'upcoming',
-      };
+      const response = await apiRequest('GET', `/api/events/${params!.id}`);
+      const data = await response.json();
+      return data;
     },
     enabled: isEditMode ? true : false,
   });
@@ -144,12 +135,37 @@ export default function EventForm() {
     }
   }, [eventData, form]);
   
-  // Fetch venues for the dropdown
+  // Fetch venues for the dropdown from the API
   useEffect(() => {
-    // In a real app, this would fetch from an API
-    // For now, use mock data
-    setVenues(mockVenues);
-  }, []);
+    async function fetchVenues() {
+      try {
+        const response = await apiRequest('GET', '/api/venues');
+        const venuesData = await response.json();
+        
+        // Only set venues data if we received an array
+        if (Array.isArray(venuesData)) {
+          console.log('Fetched venues:', venuesData);
+          setVenues(venuesData);
+        } else {
+          console.error('Invalid venues data format:', venuesData);
+          toast({
+            title: 'Error',
+            description: 'Could not load venues data. Please try again.',
+            variant: 'destructive',
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching venues:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load venues. Please try again.',
+          variant: 'destructive',
+        });
+      }
+    }
+    
+    fetchVenues();
+  }, [toast]);
   
   // Create event mutation
   const createEventMutation = useMutation({
@@ -204,12 +220,13 @@ export default function EventForm() {
   const onSubmit = async (values: EventFormValues) => {
     setIsSubmitting(true);
     try {
-      // In a real app, this would call the appropriate API endpoint
       if (isEditMode) {
         await updateEventMutation.mutateAsync(values);
       } else {
         await createEventMutation.mutateAsync(values);
       }
+    } catch (error) {
+      console.error('Form submission error:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -401,7 +418,7 @@ export default function EventForm() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {venues.map((venue) => (
+                      {venues.map((venue: Venue) => (
                         <SelectItem key={venue.id} value={venue.id.toString()}>
                           {venue.name}
                         </SelectItem>
