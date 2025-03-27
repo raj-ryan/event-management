@@ -29,16 +29,16 @@ function App() {
         {/* Protected routes that require authentication */}
         <ProtectedRoute path="/dashboard" component={DashboardPage} />
         
-        {/* Event routes */}
+        {/* Event routes - some require admin role */}
         <ProtectedRoute path="/events" component={EventsPage} />
-        <ProtectedRoute path="/events/new" component={EventForm} />
-        <ProtectedRoute path="/events/edit/:id" component={EventForm} />
+        <ProtectedRoute path="/events/new" component={EventForm} requiredRole="admin" />
+        <ProtectedRoute path="/events/edit/:id" component={EventForm} requiredRole="admin" />
         <ProtectedRoute path="/events/:id" component={EventDetail} />
         
-        {/* Venue routes */}
+        {/* Venue routes - creating and editing venues require admin role */}
         <ProtectedRoute path="/venues" component={VenuesPage} />
-        <ProtectedRoute path="/venues/new" component={VenueForm} />
-        <ProtectedRoute path="/venues/edit/:id" component={VenueForm} />
+        <ProtectedRoute path="/venues/new" component={VenueForm} requiredRole="admin" />
+        <ProtectedRoute path="/venues/edit/:id" component={VenueForm} requiredRole="admin" />
         <ProtectedRoute path="/venues/:id" component={VenueDetail} />
         
         {/* Booking routes */}

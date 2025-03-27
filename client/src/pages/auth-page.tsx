@@ -93,7 +93,10 @@ export default function AuthPage() {
             description: "Welcome to the admin dashboard!",
           });
           
-          // Simple navigation - route protection will handle the rest
+          // Set role in session storage to identify admin
+          sessionStorage.setItem('userRole', 'admin');
+          
+          // Navigate to admin dashboard
           navigate("/dashboard?role=admin");
           
         } catch (error) {
@@ -137,8 +140,11 @@ export default function AuthPage() {
           description: "Welcome to EventZen!",
         });
         
-        // Simple navigation - route protection will handle the rest
-        navigate("/dashboard");
+        // Set role in session storage to identify regular user
+        sessionStorage.setItem('userRole', 'user');
+        
+        // Navigate to user dashboard
+        navigate("/dashboard?role=user");
         
       } catch (error) {
         console.error("User login error:", error);
@@ -171,8 +177,11 @@ export default function AuthPage() {
         description: "Welcome to EventZen!",
       });
       
-      // Simple navigation - route protection will handle the rest
-      navigate("/dashboard");
+      // Set role in session storage to identify regular user
+      sessionStorage.setItem('userRole', 'user');
+      
+      // Navigate to user dashboard
+      navigate("/dashboard?role=user");
       
     } catch (error) {
       console.error("Registration error:", error);
@@ -204,8 +213,11 @@ export default function AuthPage() {
         description: "Welcome to EventZen!",
       });
       
-      // Simple navigation - route protection will handle the rest
-      navigate("/dashboard");
+      // Set role in session storage to identify regular user
+      sessionStorage.setItem('userRole', 'user');
+      
+      // Navigate to user dashboard
+      navigate("/dashboard?role=user");
       
     } catch (error) {
       console.error("Google login error:", error);

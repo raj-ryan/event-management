@@ -19,20 +19,25 @@ export default function DashboardPage() {
     //   setIsAdmin(true);
     // }
     
-    // For development, read from URL or localStorage
+    // For development, read from URL or sessionStorage/localStorage
     const urlParams = new URLSearchParams(window.location.search);
     
     if (urlParams.get("role") === "admin") {
       setIsAdmin(true);
-      // Store in localStorage for persistence
+      // Store in sessionStorage for session persistence
+      sessionStorage.setItem("userRole", "admin");
+      // Also store in localStorage for longer-term persistence
       localStorage.setItem("userRole", "admin");
     } else if (urlParams.get("role") === "user") {
       setIsAdmin(false);
+      sessionStorage.setItem("userRole", "user");
       localStorage.setItem("userRole", "user");
     } else {
-      // Read from storage if not in URL
+      // Read from storage if not in URL, prioritize sessionStorage for current session
+      const sessionRole = sessionStorage.getItem("userRole");
       const storedRole = localStorage.getItem("userRole");
-      if (storedRole === "admin") {
+      
+      if (sessionRole === "admin" || storedRole === "admin") {
         setIsAdmin(true);
       } else {
         setIsAdmin(false);
@@ -50,10 +55,21 @@ export default function DashboardPage() {
   };
 
   const handleLogout = () => {
+    // Clear both session and local storage
+    sessionStorage.removeItem('userRole');
+    localStorage.removeItem('userRole');
+    
+    // For Firebase mock auth in development
+    if (import.meta.env.DEV) {
+      sessionStorage.removeItem('mockUserAuthenticated');
+    }
+    
     toast({
       title: "Logged out",
       description: "You have been successfully logged out.",
     });
+    
+    // Navigate to home
     navigate("/");
   };
 
