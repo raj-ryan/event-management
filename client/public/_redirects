@@ -5,8 +5,9 @@
 /api/*  /.netlify/functions/api/:splat  200
 /ws/*  /.netlify/functions/ws/:splat  101
 
-# Serve netlify-verify.js directly to check deployment
+# Serve netlify utility scripts directly
 /netlify-verify.js /netlify-verify.js 200
+/netlify-link-checker.js /netlify-link-checker.js 200
 
 # Serve the netlify guide documentation
 /netlify-env-guide.md /netlify-env-guide.md 200

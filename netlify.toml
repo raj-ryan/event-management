@@ -41,6 +41,12 @@
   force = true
 
 [[redirects]]
+  from = "/netlify-link-checker.js"
+  to = "/netlify-link-checker.js"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/netlify-env-guide.md"
   to = "/netlify-env-guide.md"
   status = 200
