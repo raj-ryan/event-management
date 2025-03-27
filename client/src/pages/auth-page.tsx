@@ -60,14 +60,20 @@ export default function AuthPage() {
       const adminAuth = window.sessionStorage.getItem('adminAuthenticated');
       const mockUserAuth = window.sessionStorage.getItem('mockUserAuthenticated');
       
-      // If user is logged in via Firebase or session storage
+      // Clear any redirect flag when the auth page loads
+      sessionStorage.removeItem('authRedirectInProgress');
+      sessionStorage.removeItem('redirectInProgress');
+      
+      // If user is logged in via Firebase or session storage, redirect to dashboard
       if (user || adminAuth === 'true' || mockUserAuth === 'true') {
         console.log("Auth detected, redirecting from auth page:", {
           firebaseUser: !!user,
           adminAuth: adminAuth === 'true',
           mockUser: mockUserAuth === 'true'
         });
-        navigate("/dashboard");
+        
+        // Use direct navigation to ensure the redirect works
+        window.location.href = "/dashboard";
       }
     };
     

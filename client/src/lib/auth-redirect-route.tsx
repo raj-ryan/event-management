@@ -32,8 +32,18 @@ export function AuthRedirectRoute({
 
   // Redirect to dashboard if user is logged in or admin/mock auth exists
   useEffect(() => {
-    if ((user || isAdminOrMockUser) && !isLoading) {
+    // Only do the redirect if we're not already in the redirect process
+    const redirectInProgress = sessionStorage.getItem('redirectInProgress');
+    
+    if ((user || isAdminOrMockUser) && !isLoading && !redirectInProgress) {
       console.log("Redirecting to dashboard from auth page");
+      // Set a flag to prevent redirect loops
+      sessionStorage.setItem('redirectInProgress', 'true');
+      // Clear the flag after navigation
+      setTimeout(() => {
+        sessionStorage.removeItem('redirectInProgress');
+      }, 2000);
+      
       navigate("/dashboard");
     }
   }, [user, isAdminOrMockUser, isLoading, navigate]);

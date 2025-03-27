@@ -54,10 +54,16 @@ export function ProtectedRoute({
         if (!user && !isAdmin && !isMockUser) {
           console.log("Not authenticated: redirecting to auth page");
           // Redirect to auth page if not logged in
-          setTimeout(() => navigate("/auth"), 100);
+          // Set a flag to prevent redirect loops
+          sessionStorage.setItem('authRedirectInProgress', 'true');
+          
+          // Use direct navigation to avoid potential routing issues
+          window.location.href = "/auth";
+          
           return (
             <div className="flex items-center justify-center min-h-screen">
-              <p>Redirecting to login...</p>
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="ml-2">Redirecting to login...</p>
             </div>
           );
         }

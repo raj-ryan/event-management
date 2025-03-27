@@ -82,7 +82,7 @@ export default function EventForm() {
   const [venues, setVenues] = useState(mockVenues);
   
   // Determine if this is edit mode based on the route
-  const isEditMode = match && params?.id;
+  const isEditMode = Boolean(match && params?.id);
   
   // Define default form values
   const defaultValues: Partial<EventFormValues> = {
@@ -123,7 +123,7 @@ export default function EventForm() {
         status: 'upcoming',
       };
     },
-    enabled: isEditMode,
+    enabled: isEditMode ? true : false,
   });
   
   // Reset form when event data is loaded
