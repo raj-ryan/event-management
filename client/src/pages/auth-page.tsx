@@ -53,33 +53,7 @@ export default function AuthPage() {
   const { user, loginWithGoogle, register: firebaseRegister, isLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Check if user is already logged in via Firebase, admin, or mock user
-  useEffect(() => {
-    // Check for any type of authentication
-    const checkAuth = () => {
-      const adminAuth = window.sessionStorage.getItem('adminAuthenticated');
-      const mockUserAuth = window.sessionStorage.getItem('mockUserAuthenticated');
-      
-      // Clear any redirect flag when the auth page loads
-      sessionStorage.removeItem('authRedirectInProgress');
-      sessionStorage.removeItem('redirectInProgress');
-      
-      // If user is logged in via Firebase or session storage, redirect to dashboard
-      if (user || adminAuth === 'true' || mockUserAuth === 'true') {
-        console.log("Auth detected, redirecting from auth page:", {
-          firebaseUser: !!user,
-          adminAuth: adminAuth === 'true',
-          mockUser: mockUserAuth === 'true'
-        });
-        
-        // Use direct navigation to ensure the redirect works
-        window.location.href = "/dashboard";
-      }
-    };
-    
-    // Check immediately and then again if anything changes
-    checkAuth();
-  }, [user, navigate]);
+  // This is now handled by AuthRedirectRoute, no effect needed here
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -112,27 +86,21 @@ export default function AuthPage() {
         try {
           // For admin, we'll set a session storage flag rather than using Firebase
           // This allows us to bypass the Firebase authentication for admin users
-          window.sessionStorage.setItem('adminAuthenticated', 'true');
+          sessionStorage.setItem('adminAuthenticated', 'true');
           
           toast({
             title: "Admin Login Successful",
             description: "Welcome to the admin dashboard!",
           });
           
-          // Use direct navigation for admin
-          console.log("Admin login successful, redirecting to dashboard...");
+          // Simple navigation - route protection will handle the rest
           navigate("/dashboard?role=admin");
-          
-          // Force the navigation in case the navigate method doesn't work
-          setTimeout(() => {
-            window.location.replace("/dashboard?role=admin");
-          }, 300);
           
         } catch (error) {
           console.error("Navigation error:", error);
           toast({
-            title: "Navigation Error",
-            description: "Error redirecting to dashboard",
+            title: "Login Error",
+            description: "Something went wrong during login",
             variant: "destructive",
           });
           setIsSubmitting(false);
@@ -157,7 +125,7 @@ export default function AuthPage() {
         } catch (error) {
           // Even if Firebase login fails in development, the mock session might have been set
           // So we check for it explicitly here
-          if (import.meta.env.DEV && window.sessionStorage.getItem('mockUserAuthenticated') === 'true') {
+          if (import.meta.env.DEV && sessionStorage.getItem('mockUserAuthenticated') === 'true') {
             console.log("Mock session detected despite Firebase error - proceeding with login");
           } else {
             throw error; // Re-throw if not in dev mode or no mock session
@@ -169,16 +137,8 @@ export default function AuthPage() {
           description: "Welcome to EventZen!",
         });
         
-        // Use stronger redirect approach with both methods
-        setTimeout(() => {
-          console.log("User login successful, redirecting to dashboard...");
-          navigate("/dashboard");
-          
-          // Fallback redirect if navigate doesn't work
-          setTimeout(() => {
-            window.location.replace("/dashboard");
-          }, 500);
-        }, 100);
+        // Simple navigation - route protection will handle the rest
+        navigate("/dashboard");
         
       } catch (error) {
         console.error("User login error:", error);
@@ -198,9 +158,8 @@ export default function AuthPage() {
       try {
         await firebaseRegister(values);
       } catch (error) {
-        // Even if registration fails in development, the mock session might have been set
-        // So we check for it explicitly here
-        if (import.meta.env.DEV && window.sessionStorage.getItem('mockUserAuthenticated') === 'true') {
+        // Check for mock session in dev mode
+        if (import.meta.env.DEV && sessionStorage.getItem('mockUserAuthenticated') === 'true') {
           console.log("Mock session detected despite registration error - proceeding");
         } else {
           throw error; // Re-throw if not in dev mode or no mock session
@@ -212,16 +171,8 @@ export default function AuthPage() {
         description: "Welcome to EventZen!",
       });
       
-      // Use stronger redirect approach with both methods
-      setTimeout(() => {
-        console.log("Registration successful, redirecting to dashboard...");
-        navigate("/dashboard");
-        
-        // Fallback redirect if navigate doesn't work
-        setTimeout(() => {
-          window.location.replace("/dashboard");
-        }, 500);
-      }, 100);
+      // Simple navigation - route protection will handle the rest
+      navigate("/dashboard");
       
     } catch (error) {
       console.error("Registration error:", error);
@@ -240,9 +191,8 @@ export default function AuthPage() {
       try {
         await loginWithGoogle();
       } catch (error) {
-        // Even if Google login fails in development, the mock session might have been set
-        // So we check for it explicitly here
-        if (import.meta.env.DEV && window.sessionStorage.getItem('mockUserAuthenticated') === 'true') {
+        // Check for mock session in dev mode
+        if (import.meta.env.DEV && sessionStorage.getItem('mockUserAuthenticated') === 'true') {
           console.log("Mock session detected despite Google login error - proceeding");
         } else {
           throw error; // Re-throw if not in dev mode or no mock session
@@ -254,16 +204,8 @@ export default function AuthPage() {
         description: "Welcome to EventZen!",
       });
       
-      // Use stronger redirect approach with both methods
-      setTimeout(() => {
-        console.log("Google login successful, redirecting to dashboard...");
-        navigate("/dashboard");
-        
-        // Fallback redirect if navigate doesn't work
-        setTimeout(() => {
-          window.location.replace("/dashboard");
-        }, 500);
-      }, 100);
+      // Simple navigation - route protection will handle the rest
+      navigate("/dashboard");
       
     } catch (error) {
       console.error("Google login error:", error);

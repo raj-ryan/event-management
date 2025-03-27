@@ -1,8 +1,11 @@
-import { Route, useLocation } from "wouter";
-import { useAuth } from "@/hooks/use-auth";
-import { Loader2 } from "lucide-react";
+import { Route } from "wouter";
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
+/**
+ * A route that requires authentication to access.
+ * If user is not authenticated, displays a login page or redirects to login.
+ */
 export function ProtectedRoute({
   path,
   component: Component,
@@ -10,39 +13,37 @@ export function ProtectedRoute({
   path: string;
   component: () => React.JSX.Element;
 }) {
-  const { user, isLoading } = useAuth();
-  const [_, navigate] = useLocation();
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   
-  // Check if user is authenticated via session storage
-  const [isMockUser, setIsMockUser] = useState<boolean>(false);
-  
+  // Simple check for admin or mock user authentication via session storage
   useEffect(() => {
-    // Check for both admin and mock user authentication
-    const adminAuth = window.sessionStorage.getItem('adminAuthenticated');
-    const mockUserAuth = window.sessionStorage.getItem('mockUserAuthenticated');
+    const checkAuth = () => {
+      const adminAuth = sessionStorage.getItem('adminAuthenticated');
+      const mockUserAuth = sessionStorage.getItem('mockUserAuthenticated');
+      
+      // Using simple session-based auth for now
+      const authenticated = (adminAuth === 'true' || mockUserAuth === 'true');
+      
+      setIsAuthenticated(authenticated);
+      setIsLoading(false);
+      
+      // If not authenticated, redirect to auth page
+      if (!authenticated) {
+        // Only redirect if we're not already on the auth page
+        if (!window.location.pathname.includes('/auth')) {
+          window.location.href = '/auth';
+        }
+      }
+    };
     
-    setIsAdmin(adminAuth === 'true');
-    setIsMockUser(mockUserAuth === 'true');
-    
-    console.log("Auth status:", { 
-      isAdmin: adminAuth === 'true', 
-      isMockUser: mockUserAuth === 'true',
-      firebaseUser: !!user 
-    });
-  }, [user]);
-
-  // Check URL for admin role parameter
-  useEffect(() => {
-    if (path.includes("?role=admin") || window.location.search.includes("role=admin")) {
-      setIsAdmin(true);
-    }
-  }, [path]);
+    checkAuth();
+  }, []);
 
   return (
     <Route path={path}>
       {() => {
-        if (isLoading && !isAdmin) {
+        if (isLoading) {
           return (
             <div className="flex items-center justify-center min-h-screen">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -50,16 +51,7 @@ export function ProtectedRoute({
           );
         }
         
-        // Allow access if user is authenticated via Firebase OR is admin via session OR is mock user
-        if (!user && !isAdmin && !isMockUser) {
-          console.log("Not authenticated: redirecting to auth page");
-          // Redirect to auth page if not logged in
-          // Set a flag to prevent redirect loops
-          sessionStorage.setItem('authRedirectInProgress', 'true');
-          
-          // Use direct navigation to avoid potential routing issues
-          window.location.href = "/auth";
-          
+        if (!isAuthenticated) {
           return (
             <div className="flex items-center justify-center min-h-screen">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />

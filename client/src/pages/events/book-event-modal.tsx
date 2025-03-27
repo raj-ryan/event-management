@@ -1,13 +1,8 @@
-import React, { useState } from 'react';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2, Ticket, CreditCard } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useState } from "react";
+import { useLocation } from "wouter";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -15,297 +10,297 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Separator } from '@/components/ui/separator';
-import { Label } from '@/components/ui/label';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { format } from "date-fns";
 
-// Form schema with validation
-const formSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  phone: z.string().optional(),
-  ticketCount: z.number().int().min(1, { message: "Must book at least one ticket" }),
-});
-
-type FormValues = z.infer<typeof formSchema>;
-
-interface Event {
-  id: number;
-  name: string;
-  price: number;
-  capacity: number;
-  registeredAttendees: number;
-  date: string | Date;
-  status: string;
-}
-
+// Props for the component
 interface BookEventModalProps {
-  event: Event;
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
+  event: any; // This would ideally be strongly typed to match your event schema
 }
 
-export default function BookEventModal({ event, isOpen, onClose, onSuccess }: BookEventModalProps) {
+export default function BookEventModal({ isOpen, onClose, event }: BookEventModalProps) {
+  const [_, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+  const [paymentMethod, setPaymentMethod] = useState("credit_card");
+  const [isBookingComplete, setIsBookingComplete] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   
-  // Calculate available tickets
-  const availableTickets = event.capacity - event.registeredAttendees;
-  
-  // Initialize form
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      phone: "",
-      ticketCount: 1,
-    },
-  });
-  
-  // Event booking mutation
-  const bookEventMutation = useMutation({
-    mutationFn: async (data: FormValues) => {
-      // Calculate total amount based on event price and ticket count
-      const totalAmount = event.price * data.ticketCount;
+  // Booking mutation
+  const bookingMutation = useMutation({
+    mutationFn: async (bookingData: any) => {
+      // In a real app, this would call your API
+      // For demo purposes, we'll simulate a delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      const bookingData = {
+      // Return a mock response
+      return {
+        bookingId: Math.floor(Math.random() * 10000),
         eventId: event.id,
-        ticketCount: data.ticketCount,
-        totalAmount,
-        attendees: [{
-          firstName: data.name.split(' ')[0],
-          lastName: data.name.split(' ').slice(1).join(' ') || '',
-          email: data.email,
-          phone: data.phone || null
-        }]
+        userId: 1, // This would be the current user's ID
+        quantity,
+        totalAmount: (event.price * quantity),
+        status: "confirmed",
+        createdAt: new Date().toISOString(),
       };
-      
-      const response = await apiRequest('POST', '/api/event-bookings', bookingData);
-      return response.json();
     },
-    onSuccess: () => {
-      // Refresh bookings data
+    onSuccess: (data) => {
+      // In a real app, invalidate the relevant queries
       queryClient.invalidateQueries({ queryKey: ['/api/bookings'] });
       queryClient.invalidateQueries({ queryKey: ['/api/events', event.id] });
       
-      // Show success notification
+      setIsProcessingPayment(false);
+      setIsBookingComplete(true);
+      
       toast({
-        title: "Event Booked!",
-        description: `You have successfully booked tickets for ${event.name}.`,
+        title: "Booking successful!",
+        description: `You've booked ${quantity} ticket${quantity > 1 ? 's' : ''} for ${event.name}`,
       });
-      
-      // Close the modal and reset form
-      onClose();
-      form.reset();
-      
-      // Call onSuccess callback if provided
-      if (onSuccess) {
-        onSuccess();
-      }
     },
     onError: (error) => {
+      setIsProcessingPayment(false);
+      
       toast({
-        title: "Booking Failed",
-        description: error instanceof Error ? error.message : "Could not complete your booking",
+        title: "Booking failed",
+        description: "There was an error processing your booking. Please try again.",
         variant: "destructive",
       });
     }
   });
   
   // Handle form submission
-  const onSubmit = async (data: FormValues) => {
-    // Validate that ticket count is not greater than available tickets
-    if (data.ticketCount > availableTickets) {
-      toast({
-        title: "Invalid Ticket Count",
-        description: `Only ${availableTickets} tickets are available for this event`,
-        variant: "destructive",
-      });
-      return;
-    }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     
-    setIsSubmitting(true);
-    try {
-      await bookEventMutation.mutateAsync(data);
-    } finally {
-      setIsSubmitting(false);
+    setIsProcessingPayment(true);
+    
+    const bookingData = {
+      eventId: event.id,
+      quantity,
+      paymentMethod,
+      totalAmount: (event.price * quantity),
+    };
+    
+    bookingMutation.mutate(bookingData);
+  };
+  
+  // Handle closing the modal (reset state)
+  const handleClose = () => {
+    if (!isProcessingPayment) {
+      onClose();
+      
+      // Reset the form state if modal is closed
+      setTimeout(() => {
+        setQuantity(1);
+        setPaymentMethod("credit_card");
+        setIsBookingComplete(false);
+      }, 300);
     }
   };
   
-  // Generate ticket count options based on availability (max 10 or available tickets)
-  const maxTickets = Math.min(10, availableTickets);
-  const ticketOptions = Array.from({ length: maxTickets }, (_, i) => i + 1);
+  // Navigate to bookings page after successful booking
+  const viewBookings = () => {
+    onClose();
+    navigate("/bookings");
+  };
+  
+  // Calculate total cost
+  const totalCost = event?.price * quantity;
+  
+  // Check if soldOut or event is not upcoming
+  const isSoldOut = event ? (event.capacity - event.attendees.count) === 0 : false;
+  const isBookable = event ? event.status === 'upcoming' : false;
+  
+  // Render the booking confirmation content
+  const renderBookingConfirmation = () => (
+    <div className="flex flex-col items-center text-center py-6">
+      <CheckCircle2 className="h-16 w-16 text-green-500 mb-6" />
+      <h3 className="text-2xl font-bold mb-2">Booking Confirmed!</h3>
+      <p className="text-muted-foreground mb-6">
+        Thank you for booking tickets to {event?.name}. We've sent a confirmation email with all the details.
+      </p>
+      <div className="grid grid-cols-2 gap-4 w-full mb-8">
+        <div className="text-left">
+          <p className="text-sm font-medium text-muted-foreground">Event</p>
+          <p className="font-semibold">{event?.name}</p>
+        </div>
+        <div className="text-left">
+          <p className="text-sm font-medium text-muted-foreground">Date</p>
+          <p className="font-semibold">{format(new Date(event?.date), "PPP")}</p>
+        </div>
+        <div className="text-left">
+          <p className="text-sm font-medium text-muted-foreground">Location</p>
+          <p className="font-semibold">{event?.venue.name}</p>
+        </div>
+        <div className="text-left">
+          <p className="text-sm font-medium text-muted-foreground">Tickets</p>
+          <p className="font-semibold">{quantity} x ${event?.price.toFixed(2)}</p>
+        </div>
+      </div>
+      <Button onClick={viewBookings}>View My Bookings</Button>
+    </div>
+  );
+  
+  // Render the booking form content
+  const renderBookingForm = () => (
+    <form onSubmit={handleSubmit}>
+      <div className="grid gap-4 py-4">
+        {!isBookable && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded flex items-start mb-4">
+            <AlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium">This event is no longer available for booking</p>
+              <p className="text-sm">The event has {event?.status === 'completed' ? 'already ended' : 
+                event?.status === 'cancelled' ? 'been cancelled' : 'started'}.</p>
+            </div>
+          </div>
+        )}
+        
+        {isSoldOut && (
+          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded flex items-start mb-4">
+            <AlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium">Sold Out</p>
+              <p className="text-sm">This event has reached its maximum capacity.</p>
+            </div>
+          </div>
+        )}
+        
+        <div className="space-y-2">
+          <Label htmlFor="event-name">Event</Label>
+          <Input id="event-name" value={event?.name} disabled />
+        </div>
+        
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="event-date">Date</Label>
+            <Input 
+              id="event-date" 
+              value={event?.date ? format(new Date(event.date), "PPP") : ""} 
+              disabled 
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="event-price">Price</Label>
+            <Input 
+              id="event-price" 
+              value={`$${event?.price.toFixed(2)} per ticket`} 
+              disabled 
+            />
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="ticket-quantity">Number of Tickets</Label>
+          <div className="flex flex-row h-10 w-32 rounded-md border border-input overflow-hidden">
+            <button 
+              type="button"
+              className="px-3 text-lg font-medium hover:bg-muted transition-colors"
+              onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
+              disabled={isSoldOut || !isBookable}
+            >
+              -
+            </button>
+            <div className="flex-1 flex items-center justify-center font-medium">
+              {quantity}
+            </div>
+            <button 
+              type="button"
+              className="px-3 text-lg font-medium hover:bg-muted transition-colors"
+              onClick={() => setQuantity(prev => Math.min(event?.capacity - event?.attendees.count || 10, prev + 1))}
+              disabled={isSoldOut || !isBookable}
+            >
+              +
+            </button>
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="payment-method">Payment Method</Label>
+          <Select 
+            defaultValue={paymentMethod} 
+            onValueChange={setPaymentMethod}
+            disabled={isSoldOut || !isBookable}
+          >
+            <SelectTrigger id="payment-method">
+              <SelectValue placeholder="Select payment method" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="credit_card">Credit Card</SelectItem>
+              <SelectItem value="paypal">PayPal</SelectItem>
+              <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div className="pt-2">
+          <div className="flex justify-between font-medium">
+            <span>Total:</span>
+            <span>${totalCost.toFixed(2)}</span>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            All prices include taxes and fees
+          </p>
+        </div>
+      </div>
+      
+      <DialogFooter>
+        <Button 
+          variant="outline" 
+          onClick={handleClose}
+          disabled={isProcessingPayment}
+        >
+          Cancel
+        </Button>
+        <Button 
+          type="submit" 
+          disabled={quantity < 1 || isSoldOut || !isBookable || isProcessingPayment}
+        >
+          {isProcessingPayment ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            'Confirm Booking'
+          )}
+        </Button>
+      </DialogFooter>
+    </form>
+  );
   
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Book Tickets: {event.name}</DialogTitle>
+          <DialogTitle>
+            {isBookingComplete ? 'Booking Confirmed' : 'Book Event'}
+          </DialogTitle>
           <DialogDescription>
-            Fill out the details below to book tickets for this event.
+            {isBookingComplete 
+              ? 'Your booking has been confirmed. See details below.'
+              : 'Complete the form below to book your tickets.'}
           </DialogDescription>
         </DialogHeader>
         
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid gap-4 py-4">
-              <FormField
-                control={form.control}
-                name="ticketCount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Number of Tickets</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={availableTickets}
-                        {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Max: {availableTickets} tickets available
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Full Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="John Doe" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Name of the primary attendee
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="email" 
-                        placeholder="email@example.com" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Your confirmation and tickets will be sent here
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone (Optional)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="tel" 
-                        placeholder="(123) 456-7890" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      For urgent event updates
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <Separator className="my-2" />
-              
-              <div className="bg-secondary/50 p-4 rounded-md space-y-2">
-                <Label>Booking Summary</Label>
-                <div className="grid grid-cols-2 gap-1 text-sm">
-                  <div>Event:</div>
-                  <div className="font-medium">{event.name}</div>
-                  
-                  <div>Date:</div>
-                  <div className="font-medium">
-                    {event.date instanceof Date 
-                      ? event.date.toLocaleDateString() 
-                      : new Date(event.date).toLocaleDateString()}
-                  </div>
-                  
-                  <div>Price per ticket:</div>
-                  <div className="font-medium">${event.price.toFixed(2)}</div>
-                  
-                  <div>Number of tickets:</div>
-                  <div className="font-medium">{form.watch('ticketCount') || 1}</div>
-                </div>
-                
-                <Separator className="my-2" />
-                
-                <div className="flex justify-between items-center pt-1">
-                  <div className="font-semibold">Total:</div>
-                  <div className="font-bold text-lg">
-                    ${((form.watch('ticketCount') || 1) * event.price).toFixed(2)}
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <DialogFooter className="flex flex-col sm:flex-row gap-2">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={onClose}
-                className="w-full sm:w-auto"
-              >
-                Cancel
-              </Button>
-              
-              <Button 
-                type="submit" 
-                disabled={isSubmitting || availableTickets === 0} 
-                className="w-full sm:w-auto"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    Proceed to Payment
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+        {isBookingComplete 
+          ? renderBookingConfirmation() 
+          : renderBookingForm()}
       </DialogContent>
     </Dialog>
   );

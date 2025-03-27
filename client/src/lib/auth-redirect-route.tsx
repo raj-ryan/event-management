@@ -1,8 +1,11 @@
-import { Route, useLocation } from "wouter";
-import { useAuth } from "@/hooks/use-auth";
+import { Route } from "wouter";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 
+/**
+ * A route that redirects to dashboard if already authenticated.
+ * For use with login and registration pages.
+ */
 export function AuthRedirectRoute({
   path,
   component: Component,
@@ -10,43 +13,34 @@ export function AuthRedirectRoute({
   path: string;
   component: () => React.JSX.Element;
 }) {
-  const { user, isLoading } = useAuth();
-  const [_, navigate] = useLocation();
-
-  // Check for admin or mock user authentication
-  const [isAdminOrMockUser, setIsAdminOrMockUser] = useState<boolean>(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [redirected, setRedirected] = useState<boolean>(false);
   
+  // Simple check for admin or mock user authentication via session storage
   useEffect(() => {
-    const adminAuth = window.sessionStorage.getItem('adminAuthenticated');
-    const mockUserAuth = window.sessionStorage.getItem('mockUserAuthenticated');
-    
-    setIsAdminOrMockUser(adminAuth === 'true' || mockUserAuth === 'true');
-    
-    console.log("Auth redirect check:", {
-      user,
-      isAdmin: adminAuth === 'true',
-      isMockUser: mockUserAuth === 'true',
-    });
-    
-  }, [user]);
-
-  // Redirect to dashboard if user is logged in or admin/mock auth exists
-  useEffect(() => {
-    // Only do the redirect if we're not already in the redirect process
-    const redirectInProgress = sessionStorage.getItem('redirectInProgress');
-    
-    if ((user || isAdminOrMockUser) && !isLoading && !redirectInProgress) {
-      console.log("Redirecting to dashboard from auth page");
-      // Set a flag to prevent redirect loops
-      sessionStorage.setItem('redirectInProgress', 'true');
-      // Clear the flag after navigation
-      setTimeout(() => {
-        sessionStorage.removeItem('redirectInProgress');
-      }, 2000);
+    const checkAuth = () => {
+      const adminAuth = sessionStorage.getItem('adminAuthenticated');
+      const mockUserAuth = sessionStorage.getItem('mockUserAuthenticated');
       
-      navigate("/dashboard");
-    }
-  }, [user, isAdminOrMockUser, isLoading, navigate]);
+      // Using simple session-based auth for now
+      const authenticated = (adminAuth === 'true' || mockUserAuth === 'true');
+      
+      setIsAuthenticated(authenticated);
+      setIsLoading(false);
+      
+      // If authenticated, redirect to dashboard
+      if (authenticated && !redirected) {
+        // Only redirect if we're currently on the auth page
+        if (window.location.pathname.includes('/auth')) {
+          setRedirected(true);
+          window.location.href = '/dashboard';
+        }
+      }
+    };
+    
+    checkAuth();
+  }, [redirected]);
 
   return (
     <Route path={path}>
@@ -59,17 +53,16 @@ export function AuthRedirectRoute({
           );
         }
         
-        // Only show the component if user is not logged in and no admin/mock auth
-        if (!user && !isAdminOrMockUser) {
-          return <Component />;
+        if (isAuthenticated) {
+          return (
+            <div className="flex items-center justify-center min-h-screen">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="ml-2">Redirecting to dashboard...</p>
+            </div>
+          );
         }
         
-        // Return loading state while redirect happens
-        return (
-          <div className="flex items-center justify-center min-h-screen">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        );
+        return <Component />;
       }}
     </Route>
   );
