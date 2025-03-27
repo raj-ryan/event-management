@@ -14,11 +14,14 @@ export default function DashboardPage() {
   
   // Check if user came from admin login
   useEffect(() => {
-    // This would normally read from the auth context or localStorage
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get("admin") === "true") {
-      setIsAdmin(true);
-    }
+    // For development purposes, always show admin features
+    setIsAdmin(true);
+    
+    // In a real app, this would read from the auth context or localStorage
+    // const urlParams = new URLSearchParams(window.location.search);
+    // if (urlParams.get("admin") === "true") {
+    //   setIsAdmin(true);
+    // }
   }, []);
 
   // Simulated user data

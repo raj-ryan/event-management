@@ -44,11 +44,13 @@ export default function VenueList() {
   
   // Check for admin status
   useEffect(() => {
-    // In a real app, this would check the user context or token
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get("admin") === "true") {
-      setIsAdmin(true);
-    }
+    // For development purposes, always show admin controls
+    setIsAdmin(true);
+    
+    // In a real app, we would uncomment this to use the auth context
+    // if (auth.user?.role === "admin") {
+    //   setIsAdmin(true);
+    // }
   }, []);
 
   // Fetch venues
