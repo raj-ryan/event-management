@@ -43,23 +43,12 @@ export default function BookEventModal({ isOpen, onClose, event }: BookEventModa
   // Booking mutation
   const bookingMutation = useMutation({
     mutationFn: async (bookingData: any) => {
-      // In a real app, this would call your API
-      // For demo purposes, we'll simulate a delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Return a mock response
-      return {
-        bookingId: Math.floor(Math.random() * 10000),
-        eventId: event.id,
-        userId: 1, // This would be the current user's ID
-        quantity,
-        totalAmount: (event.price * quantity),
-        status: "confirmed",
-        createdAt: new Date().toISOString(),
-      };
+      // Make API call to book the event
+      const response = await apiRequest('POST', '/api/bookings', bookingData);
+      return await response.json();
     },
     onSuccess: (data) => {
-      // In a real app, invalidate the relevant queries
+      // Invalidate the relevant queries
       queryClient.invalidateQueries({ queryKey: ['/api/bookings'] });
       queryClient.invalidateQueries({ queryKey: ['/api/events', event.id] });
       
@@ -90,9 +79,13 @@ export default function BookEventModal({ isOpen, onClose, event }: BookEventModa
     
     const bookingData = {
       eventId: event.id,
-      quantity,
+      ticketCount: quantity,
       paymentMethod,
-      totalAmount: (event.price * quantity),
+      status: "pending",
+      paymentStatus: "pending",
+      bookingDate: new Date().toISOString(),
+      // Make sure venueId is explicitly null to ensure it appears in event bookings, not venue bookings
+      venueId: null
     };
     
     bookingMutation.mutate(bookingData);

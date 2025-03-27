@@ -203,12 +203,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // }
     
     try {
-      // If user is authenticated, use their ID, otherwise use a default ID of 1
+      // If user is authenticated, use their ID, otherwise use the default demo user ID
       const userId = req.isAuthenticated() ? req.user?.id : DEFAULT_DEMO_USER_ID;
-      const event = await storage.createEvent({ ...req.body, createdBy: userId });
+      console.log(`Creating event with user ID: ${userId}`);
+      
+      // Verify the user exists
+      const user = await storage.getUser(userId);
+      if (!user) {
+        console.error(`User with ID ${userId} not found`);
+        return res.status(400).json({ message: "User not found" });
+      }
+      
+      // Log the incoming data for debugging
+      console.log("Event data:", JSON.stringify(req.body, null, 2));
+      
+      // Make sure required fields are present
+      const eventData = {
+        ...req.body,
+        createdBy: userId,
+        status: req.body.status || 'upcoming',
+        isPublished: req.body.isPublished !== undefined ? req.body.isPublished : true,
+        capacity: parseInt(req.body.capacity) || 100,
+        price: parseFloat(req.body.price) || 0
+      };
+      
+      const event = await storage.createEvent(eventData);
       res.status(201).json(event);
     } catch (error) {
-      res.status(500).json({ message: "Error creating event" });
+      console.error("Error creating event:", error);
+      res.status(500).json({ 
+        message: "Error creating event",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
   
