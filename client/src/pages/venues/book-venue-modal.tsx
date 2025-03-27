@@ -87,14 +87,18 @@ export default function BookVenueModal({ venue, isOpen, onClose }: BookVenueModa
       // Calculate total amount based on venue price and duration
       const totalAmount = venue.price * data.bookingDuration;
       
+      // Need to ensure we're passing the venueId as a number
+      const venueId = typeof venue.id === 'string' ? parseInt(venue.id) : venue.id;
+      
       const bookingData = {
-        venueId: venue.id,
+        venueId: venueId,
         bookingDate: data.bookingDate,
         bookingDuration: data.bookingDuration,
         attendeeCount: data.attendeeCount,
         totalAmount
       };
       
+      console.log('Booking data being sent:', bookingData);
       const response = await apiRequest('POST', '/api/venue-bookings', bookingData);
       return response.json();
     },
