@@ -1,6 +1,6 @@
 [build]
   base = "."
-  publish = "dist"
+  publish = "dist/public"
   command = "npm run build"
 
 [build.environment]
@@ -9,7 +9,7 @@
 [dev]
   command = "npm run dev"
   port = 5000
-  publish = "dist"
+  publish = "dist/public"
 
 [functions]
   external_node_modules = ["express", "ws"]
@@ -38,4 +38,5 @@
   from = "/*"
   to = "/index.html"
   status = 200
+  force = true
 
