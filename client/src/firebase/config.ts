@@ -1,19 +1,40 @@
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { initializeApp, FirebaseApp } from "firebase/app";
+import { getAuth, Auth, User, onAuthStateChanged } from "firebase/auth";
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.appspot.com`,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'mock-api-key',
+  authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID || 'mock-project'}.firebaseapp.com`,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'mock-project',
+  storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID || 'mock-project'}.appspot.com`,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || 'mock-app-id',
 };
 
+// Log configuration for debugging
+console.log("Firebase config:", {
+  ...firebaseConfig,
+  apiKey: firebaseConfig.apiKey ? "[PRESENT]" : "[MISSING]",
+});
+
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+let app: FirebaseApp;
+try {
+  app = initializeApp(firebaseConfig);
+  console.log("Firebase initialized successfully");
+} catch (error) {
+  console.error("Firebase initialization error:", error);
+  throw new Error('Failed to initialize Firebase');
+}
 
 // Initialize Firebase Authentication
-export const auth = getAuth(app);
+let auth: Auth;
+try {
+  auth = getAuth(app);
+  console.log("Firebase auth initialized successfully");
+} catch (error) {
+  console.error("Firebase auth initialization error:", error);
+  throw new Error('Failed to initialize Firebase Auth');
+}
 
+export { auth };
 export default app;

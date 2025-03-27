@@ -15,17 +15,42 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { FcGoogle } from "react-icons/fc";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { loginSchema, registerSchema } from "@/hooks/use-auth";
+
+// Admin credentials 
+const ADMIN_CREDENTIALS = {
+  username: "admin",
+  password: "admin123"
+};
+
+// Define login schema with userType
+const loginSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
+  userType: z.enum(["user", "admin"], {
+    required_error: "You need to select a user type",
+  }),
+});
+
+// Register schema from auth hook
+const registerSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().email("Please enter a valid email"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+});
 
 export default function AuthPage() {
   const { toast } = useToast();
   const [_, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
-  const { user, login, loginWithGoogle, register, isLoading } = useAuth();
+  const { user, loginWithGoogle, register: firebaseRegister, isLoading } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // If user is already logged in, redirect to dashboard
   useEffect(() => {
@@ -37,8 +62,9 @@ export default function AuthPage() {
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
+      username: "",
       password: "",
+      userType: "user",
     },
   });
 
@@ -53,27 +79,82 @@ export default function AuthPage() {
     },
   });
 
-  async function onLoginSubmit(values: z.infer<typeof loginSchema>) {
-    try {
-      await login(values);
-    } catch (error) {
-      console.error("Login error:", error);
+  function onLoginSubmit(values: z.infer<typeof loginSchema>) {
+    setIsSubmitting(true);
+    
+    // Check if admin login
+    if (values.userType === "admin") {
+      if (values.username === ADMIN_CREDENTIALS.username && 
+          values.password === ADMIN_CREDENTIALS.password) {
+        // Admin login success
+        setTimeout(() => {
+          toast({
+            title: "Admin Login Successful",
+            description: "Welcome to the admin dashboard!",
+          });
+          setIsSubmitting(false);
+          navigate("/dashboard?role=admin");
+        }, 1500);
+      } else {
+        // Admin login failed
+        setTimeout(() => {
+          toast({
+            title: "Admin Login Failed",
+            description: "Invalid admin credentials",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+        }, 1500);
+      }
+    } else {
+      // Regular user login with Firebase (email login is disabled for now)
+      setTimeout(() => {
+        toast({
+          title: "User Login",
+          description: "Please use Google login for now",
+        });
+        setIsSubmitting(false);
+      }, 1000);
     }
   }
 
   async function onRegisterSubmit(values: z.infer<typeof registerSchema>) {
+    setIsSubmitting(true);
     try {
-      await register(values);
+      await firebaseRegister(values);
+      toast({
+        title: "Registration successful",
+        description: "Welcome to EventZen!",
+      });
     } catch (error) {
       console.error("Registration error:", error);
+      toast({
+        title: "Registration failed",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   }
   
   async function handleGoogleLogin() {
+    setIsSubmitting(true);
     try {
       await loginWithGoogle();
+      toast({
+        title: "Google login successful",
+        description: "Welcome to EventZen!",
+      });
     } catch (error) {
       console.error("Google login error:", error);
+      toast({
+        title: "Login failed",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -95,14 +176,54 @@ export default function AuthPage() {
                 <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-6">
                   <FormField
                     control={loginForm.control}
-                    name="email"
+                    name="userType"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
+                      <FormItem className="space-y-3">
+                        <FormLabel>Account Type</FormLabel>
                         <FormControl>
-                          <Input type="email" placeholder="Enter your email" {...field} />
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="flex space-x-4"
+                          >
+                            <FormItem className="flex items-center space-x-2 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value="user" />
+                              </FormControl>
+                              <FormLabel className="font-normal cursor-pointer">
+                                User
+                              </FormLabel>
+                            </FormItem>
+                            <FormItem className="flex items-center space-x-2 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value="admin" />
+                              </FormControl>
+                              <FormLabel className="font-normal cursor-pointer">
+                                Admin
+                              </FormLabel>
+                            </FormItem>
+                          </RadioGroup>
                         </FormControl>
                         <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                
+                  <FormField
+                    control={loginForm.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Username</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter your username" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        {loginForm.watch("userType") === "admin" && (
+                          <FormDescription>
+                            Admin username: admin
+                          </FormDescription>
+                        )}
                       </FormItem>
                     )}
                   />
@@ -117,6 +238,11 @@ export default function AuthPage() {
                           <Input type="password" placeholder="Enter your password" {...field} />
                         </FormControl>
                         <FormMessage />
+                        {loginForm.watch("userType") === "admin" && (
+                          <FormDescription>
+                            Admin password: admin123
+                          </FormDescription>
+                        )}
                       </FormItem>
                     )}
                   />
@@ -124,9 +250,9 @@ export default function AuthPage() {
                   <Button 
                     type="submit" 
                     className="w-full" 
-                    disabled={isLoading}
+                    disabled={isSubmitting}
                   >
-                    {isLoading ? (
+                    {isSubmitting ? (
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     ) : null}
                     Sign In
@@ -148,9 +274,13 @@ export default function AuthPage() {
                     variant="outline" 
                     className="w-full" 
                     onClick={handleGoogleLogin}
-                    disabled={isLoading}
+                    disabled={isSubmitting}
                   >
-                    <FcGoogle className="mr-2 h-4 w-4" />
+                    {isSubmitting ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <FcGoogle className="mr-2 h-4 w-4" />
+                    )}
                     Sign in with Google
                   </Button>
                 </form>
@@ -238,9 +368,9 @@ export default function AuthPage() {
                   <Button 
                     type="submit" 
                     className="w-full" 
-                    disabled={isLoading}
+                    disabled={isSubmitting}
                   >
-                    {isLoading ? (
+                    {isSubmitting ? (
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     ) : null}
                     Create Account
@@ -262,9 +392,13 @@ export default function AuthPage() {
                     variant="outline" 
                     className="w-full" 
                     onClick={handleGoogleLogin}
-                    disabled={isLoading}
+                    disabled={isSubmitting}
                   >
-                    <FcGoogle className="mr-2 h-4 w-4" />
+                    {isSubmitting ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <FcGoogle className="mr-2 h-4 w-4" />
+                    )}
                     Register with Google
                   </Button>
                 </form>
