@@ -2,10 +2,38 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function DashboardPage() {
-  const { user, logoutMutation } = useAuth();
+  const { user, logout, isLoading } = useAuth();
+  const { toast } = useToast();
   const [_, navigate] = useLocation();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/");
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out.",
+      });
+    } catch (error) {
+      toast({
+        title: "Logout failed",
+        description: "There was an issue logging out.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (isLoading || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center min-h-screen p-4">
@@ -65,10 +93,7 @@ export default function DashboardPage() {
               <div className="flex flex-col gap-2">
                 <Button 
                   variant="destructive" 
-                  onClick={() => {
-                    logoutMutation.mutate();
-                    navigate("/");
-                  }}
+                  onClick={handleLogout}
                 >
                   Logout
                 </Button>

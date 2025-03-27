@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,17 +18,21 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AuthPage() {
-  const { user, isLoading, loginMutation, registerMutation } = useAuth();
+  const { user, isLoading, login, register } = useAuth();
+  const { toast } = useToast();
   const [_, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Redirect if already logged in
-  if (user) {
-    navigate("/");
-    return null;
-  }
+  useEffect(() => {
+    // Redirect if logged in
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -49,15 +53,45 @@ export default function AuthPage() {
     },
   });
 
-  function onLoginSubmit(values: z.infer<typeof loginSchema>) {
-    loginMutation.mutate(values);
+  async function onLoginSubmit(values: z.infer<typeof loginSchema>) {
+    setIsSubmitting(true);
+    try {
+      await login(values);
+      toast({
+        title: "Login successful",
+        description: "Welcome back to EventZen!",
+      });
+    } catch (error) {
+      toast({
+        title: "Login failed",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
-  function onRegisterSubmit(values: z.infer<typeof registerSchema>) {
-    registerMutation.mutate(values);
+  async function onRegisterSubmit(values: z.infer<typeof registerSchema>) {
+    setIsSubmitting(true);
+    try {
+      await register(values);
+      toast({
+        title: "Registration successful",
+        description: "Welcome to EventZen!",
+      });
+    } catch (error) {
+      toast({
+        title: "Registration failed",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
-  if (isLoading) {
+  if (isLoading && user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -112,9 +146,9 @@ export default function AuthPage() {
                   <Button 
                     type="submit" 
                     className="w-full" 
-                    disabled={loginMutation.isPending}
+                    disabled={isSubmitting}
                   >
-                    {loginMutation.isPending ? (
+                    {isSubmitting ? (
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     ) : null}
                     Sign In
@@ -204,9 +238,9 @@ export default function AuthPage() {
                   <Button 
                     type="submit" 
                     className="w-full" 
-                    disabled={registerMutation.isPending}
+                    disabled={isSubmitting}
                   >
-                    {registerMutation.isPending ? (
+                    {isSubmitting ? (
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     ) : null}
                     Create Account
