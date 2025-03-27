@@ -16,7 +16,6 @@
   node_bundler = "esbuild"
   directory = "netlify/functions"
 
-# Docker-specific configuration
 [functions.api]
   included_files = ["server/**", "shared/**"]
 
@@ -40,6 +39,3 @@
   to = "/index.html"
   status = 200
 
-# Docker plugin support
-[[plugins]]
-  package = "@netlify/plugin-functions-core"
