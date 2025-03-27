@@ -3,10 +3,25 @@
   publish = "dist"
   command = "npm run build"
 
+[build.environment]
+  NODE_VERSION = "20"
+
 [dev]
   command = "npm run dev"
   port = 5000
   publish = "dist"
+
+[functions]
+  external_node_modules = ["express", "ws"]
+  node_bundler = "esbuild"
+  directory = "netlify/functions"
+
+# Docker-specific configuration
+[functions.api]
+  included_files = ["server/**", "shared/**"]
+
+[functions.ws]
+  included_files = ["server/**", "shared/**"]
 
 [[redirects]]
   from = "/api/*"
@@ -24,3 +39,7 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Docker plugin support
+[[plugins]]
+  package = "@netlify/plugin-functions-core"

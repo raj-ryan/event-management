@@ -10,13 +10,21 @@ import { z } from "zod";
 // Define the User interface
 type DbUser = {
   id: number;
+  uid: string | null;
   username: string;
   email: string;
-  password: string;
+  password: string | null; // Can be null for Firebase auth users
   firstName: string | null;
   lastName: string | null;
+  bio: string | null;
+  phone: string | null;
+  profileImage: string | null;
+  photoURL: string | null;
   role: string;
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
   createdAt: Date;
+  updatedAt: Date;
 };
 
 declare global {
@@ -33,7 +41,9 @@ async function hashPassword(password: string) {
   return `${buf.toString("hex")}.${salt}`;
 }
 
-async function comparePasswords(supplied: string, stored: string) {
+async function comparePasswords(supplied: string, stored: string | null): Promise<boolean> {
+  if (!stored) return false;
+  
   const [hashed, salt] = stored.split(".");
   const hashedBuf = Buffer.from(hashed, "hex");
   const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
@@ -74,7 +84,7 @@ export function setupAuth(app: Express) {
     new LocalStrategy(async (username, password, done) => {
       try {
         const user = await storage.getUserByUsername(username);
-        if (!user || !(await comparePasswords(password, user.password))) {
+        if (!user || !user.password || !(await comparePasswords(password, user.password))) {
           return done(null, false);
         } else {
           return done(null, user);
