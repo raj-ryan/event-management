@@ -291,6 +291,9 @@ export const insertEventSchema = createInsertSchema(events).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  // Make category optional with a default value of "other"
+  category: z.string().default("other"),
 });
 
 export const updateEventSchema = createInsertSchema(events)

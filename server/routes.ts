@@ -217,14 +217,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log the incoming data for debugging
       console.log("Event data:", JSON.stringify(req.body, null, 2));
       
+      // Process date fields to ensure they're in proper format
+      let date = req.body.date;
+      if (date && typeof date === 'string') {
+        date = new Date(date);
+      }
+      
+      let endDate = req.body.endDate;
+      if (endDate && typeof endDate === 'string') {
+        endDate = new Date(endDate);
+      } else if (!endDate) {
+        endDate = null;
+      }
+      
       // Make sure required fields are present
       const eventData = {
         ...req.body,
+        date: date,
+        endDate: endDate,
         createdBy: userId,
         status: req.body.status || 'upcoming',
         isPublished: req.body.isPublished !== undefined ? req.body.isPublished : true,
         capacity: parseInt(req.body.capacity) || 100,
-        price: parseFloat(req.body.price) || 0
+        price: parseFloat(req.body.price) || 0,
+        category: req.body.category || 'other' // Add a default category if missing
       };
       
       const event = await storage.createEvent(eventData);
@@ -500,22 +516,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "User not found" });
       }
       
-      const bookingData = { ...req.body, userId };
+      // Log the incoming data for debugging
+      console.log("Event booking data:", JSON.stringify(req.body, null, 2));
+      
+      // Process date fields to ensure they're in proper format
+      let bookingDate = req.body.bookingDate || new Date();
+      if (bookingDate && typeof bookingDate === 'string') {
+        bookingDate = new Date(bookingDate);
+      }
+      
+      // Ensure eventId is a number
+      const eventId = parseInt(req.body.eventId);
+      if (isNaN(eventId)) {
+        return res.status(400).json({ message: "Invalid event ID" });
+      }
       
       // Fetch event to calculate total amount
-      const event = await storage.getEvent(bookingData.eventId);
+      const event = await storage.getEvent(eventId);
       if (!event) {
         return res.status(404).json({ message: "Event not found" });
       }
       
       // Calculate total amount
-      const ticketCount = bookingData.ticketCount || 1;
+      const ticketCount = parseInt(req.body.ticketCount) || 1;
       const totalAmount = event.price * ticketCount;
       
-      // Create booking
+      // Create booking with explicitly setting venueId to null
       const booking = await storage.createBooking({
-        ...bookingData,
-        totalAmount
+        userId,
+        eventId,
+        venueId: null, // Explicitly set to null to ensure it shows up in event bookings
+        bookingDate,
+        ticketCount,
+        totalAmount,
+        status: req.body.status || "pending",
+        paymentStatus: req.body.paymentStatus || "pending"
       });
       
       res.status(201).json(booking);
@@ -531,7 +566,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send real-time notification
       ws.sendNotification(userId, notification);
     } catch (error) {
-      res.status(500).json({ message: "Error creating booking" });
+      console.error("Error creating event booking:", error);
+      res.status(500).json({ 
+        message: "Error creating booking",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
   
