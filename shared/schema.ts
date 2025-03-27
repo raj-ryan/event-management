@@ -13,15 +13,19 @@ export const notificationTypeEnum = pgEnum('notification_type', ['info', 'succes
 // Users table
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
+  uid: text("firebase_uid").unique(), // Firebase UID for authentication
   username: text("username").notNull().unique(),
   email: text("email").notNull().unique(),
-  password: text("password").notNull(),
+  password: text("password"), // Can be null for Firebase auth users
   firstName: text("first_name"),
   lastName: text("last_name"),
   bio: text("bio"),
   phone: text("phone"),
   profileImage: text("profile_image"),
+  photoURL: text("photo_url"), // URL to Firebase user's profile photo
   role: text("role").default("user").notNull(),
+  stripeCustomerId: text("stripe_customer_id"), // For Stripe integration
+  stripeSubscriptionId: text("stripe_subscription_id"), // For Stripe subscriptions
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
@@ -241,6 +245,7 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
+  uid: true,
   username: true,
   email: true,
   password: true,
@@ -249,7 +254,12 @@ export const insertUserSchema = createInsertSchema(users).pick({
   bio: true,
   phone: true,
   profileImage: true,
+  photoURL: true,
   role: true,
+  stripeCustomerId: true,
+  stripeSubscriptionId: true,
+}).partial({
+  password: true, // Make password optional for Firebase authentication
 });
 
 export const updateProfileSchema = createInsertSchema(users)

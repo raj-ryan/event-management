@@ -5,6 +5,8 @@ import { storage } from "./storage";
 import { setupWebSockets } from "./websocket";
 import { z } from "zod";
 import Stripe from "stripe";
+import { admin } from "./auth/firebase-admin";
+import { insertUserSchema } from "@shared/schema";
 
 const stripeKey = process.env.STRIPE_SECRET_KEY || "";
 const stripe = new Stripe(stripeKey, {
@@ -20,6 +22,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Set up WebSockets
   const ws = setupWebSockets(httpServer);
+  
+  // Firebase Authentication Routes
+  app.post("/api/auth/verify-token", async (req, res) => {
+    try {
+      const { token } = req.body;
+      
+      if (!token) {
+        return res.status(400).json({ message: "Token is required" });
+      }
+      
+      // Verify the Firebase token
+      const decodedToken = await admin.auth().verifyIdToken(token);
+      
+      // Get or create user in our database
+      let user = await storage.getUserByFirebaseUid(decodedToken.uid);
+      
+      // If user doesn't exist, create a new one
+      if (!user) {
+        // Get Firebase user details
+        const firebaseUser = await admin.auth().getUser(decodedToken.uid);
+        
+        // Create new user in our database
+        const userData = {
+          uid: decodedToken.uid,
+          username: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || `user_${Date.now()}`,
+          email: firebaseUser.email || '',
+          firstName: firebaseUser.displayName?.split(' ')[0] || '',
+          lastName: firebaseUser.displayName?.split(' ').slice(1).join(' ') || '',
+          photoURL: firebaseUser.photoURL || '',
+          role: 'user' // Default role
+        };
+        
+        const validatedUserData = insertUserSchema.parse(userData);
+        user = await storage.createUser(validatedUserData);
+      }
+      
+      // Login the user using session-based authentication
+      req.login(user, (err) => {
+        if (err) {
+          return res.status(500).json({ message: "Authentication error" });
+        }
+        res.json(user);
+      });
+    } catch (error) {
+      console.error("Token verification error:", error);
+      res.status(401).json({ 
+        message: "Invalid token",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+  
+  app.get("/api/users/firebase/:uid", async (req, res) => {
+    try {
+      const { uid } = req.params;
+      const user = await storage.getUserByFirebaseUid(uid);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching user" });
+    }
+  });
+  
+  app.post("/api/users", async (req, res) => {
+    try {
+      // Validate user data
+      const userData = insertUserSchema.parse(req.body);
+      
+      // Check if user already exists by email or username
+      const existingUserByEmail = await storage.getUserByEmail(userData.email);
+      if (existingUserByEmail) {
+        return res.status(400).json({ message: "Email already in use" });
+      }
+      
+      const existingUserByUsername = await storage.getUserByUsername(userData.username);
+      if (existingUserByUsername) {
+        return res.status(400).json({ message: "Username already taken" });
+      }
+      
+      // Check if user already exists by Firebase UID
+      if (userData.uid) {
+        const existingUserByUid = await storage.getUserByFirebaseUid(userData.uid);
+        if (existingUserByUid) {
+          return res.status(400).json({ message: "User with this Firebase UID already exists" });
+        }
+      }
+      
+      // Create user
+      const user = await storage.createUser(userData);
+      res.status(201).json(user);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ 
+        message: "Error creating user",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
 
   // Event routes
   app.get("/api/events", async (req, res) => {

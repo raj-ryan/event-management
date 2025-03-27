@@ -22,7 +22,9 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByFirebaseUid(uid: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUserStripeInfo(userId: number, stripeInfo: { stripeCustomerId: string, stripeSubscriptionId: string }): Promise<User | undefined>;
   
   // Event operations
   getEvent(id: number): Promise<Event | undefined>;
@@ -93,10 +95,28 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
   }
+  
+  async getUserByFirebaseUid(uid: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.uid, uid));
+    return user;
+  }
 
   async createUser(userData: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(userData).returning();
     return user;
+  }
+  
+  async updateUserStripeInfo(userId: number, stripeInfo: { stripeCustomerId: string, stripeSubscriptionId: string }): Promise<User | undefined> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        stripeCustomerId: stripeInfo.stripeCustomerId,
+        stripeSubscriptionId: stripeInfo.stripeSubscriptionId
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    return updatedUser;
   }
   
   // Event operations

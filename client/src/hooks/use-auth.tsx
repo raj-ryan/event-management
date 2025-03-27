@@ -1,19 +1,34 @@
-import React, { createContext, ReactNode, useContext, useState } from "react";
+import React, { createContext, ReactNode, useContext, useState, useEffect } from "react";
 import { z } from "zod";
+import {
+  User as FirebaseUser,
+  UserCredential
+} from "firebase/auth";
+import { 
+  registerWithEmailAndPassword, 
+  loginWithEmailAndPassword, 
+  signInWithGoogle, 
+  logOut, 
+  onUserAuthStateChange 
+} from "@/firebase/auth";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
-// Define the User type (simplified for now)
+// Enhanced User type with Firebase uid
 interface User {
   id: number;
+  uid: string;
   username: string;
   email: string;
   firstName?: string;
   lastName?: string;
   role: string;
+  photoURL?: string;
 }
 
 // Define login and register data schemas
 export const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
+  email: z.string().email("Please enter a valid email"),
   password: z.string().min(1, "Password is required"),
 });
 
@@ -31,16 +46,18 @@ const defaultContextValue = {
   isLoading: false,
   error: null,
   login: async () => {},
+  loginWithGoogle: async () => {},
   logout: async () => {},
   register: async () => {},
 };
 
-// Simplified AuthContext to ensure it renders initially
+// Enhanced AuthContext with Google signin
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   error: string | null;
   login: (credentials: z.infer<typeof loginSchema>) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   register: (userData: z.infer<typeof registerSchema>) => Promise<void>;
 }
@@ -49,72 +66,160 @@ export const AuthContext = createContext<AuthContextType>(defaultContextValue as
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Start with loading true
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
-  // Simple login function (to be enhanced later)
+  // Function to authenticate with our backend using Firebase token
+  const authenticateWithBackend = async (firebaseUser: FirebaseUser): Promise<User | null> => {
+    try {
+      // Get the Firebase token
+      const token = await firebaseUser.getIdToken();
+      
+      // Send the token to our backend to verify and create/get user
+      const response = await apiRequest('POST', '/api/auth/verify-token', { token });
+      
+      if (response.ok) {
+        const userData = await response.json();
+        return userData;
+      }
+      
+      return null;
+    } catch (err) {
+      console.error('Error authenticating with backend:', err);
+      return null;
+    }
+  };
+
+  // Set up Firebase auth state listener
+  useEffect(() => {
+    const unsubscribe = onUserAuthStateChange(async (firebaseUser) => {
+      setIsLoading(true);
+      
+      try {
+        if (firebaseUser) {
+          // User is signed in
+          const appUser = await createUserFromFirebaseUser(firebaseUser);
+          if (appUser) {
+            setUser(appUser);
+          }
+        } else {
+          // User is signed out
+          setUser(null);
+        }
+      } catch (err) {
+        console.error('Auth state change error:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    });
+    
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, []);
+
+  // Login with email and password
   const login = async (credentials: z.infer<typeof loginSchema>) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      // For now, simulate login success for testing UI flow
-      const mockUser: User = {
-        id: 1,
-        username: credentials.username,
-        email: `${credentials.username}@example.com`,
-        role: 'user'
-      };
+      // Call Firebase authentication
+      await loginWithEmailAndPassword(credentials.email, credentials.password);
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setUser(mockUser);
+      // Auth state listener will update the user state
+      toast({
+        title: "Login successful",
+        description: "Welcome back!",
+      });
     } catch (err: any) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      const errorMessage = err instanceof Error ? err.message : "Login failed";
+      setError(errorMessage);
+      toast({
+        title: "Login failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Simple register function (to be enhanced later)
+  // Login with Google
+  const loginWithGoogle = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // Call Firebase Google authentication
+      await signInWithGoogle();
+      
+      // Auth state listener will update the user state
+      toast({
+        title: "Google login successful",
+        description: "Welcome!",
+      });
+    } catch (err: any) {
+      const errorMessage = err instanceof Error ? err.message : "Google login failed";
+      setError(errorMessage);
+      toast({
+        title: "Login failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Register with email and password
   const register = async (userData: z.infer<typeof registerSchema>) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      // For now, simulate registration success for testing UI flow
-      const mockUser: User = {
-        id: 1,
-        username: userData.username,
-        email: userData.email,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        role: 'user'
-      };
+      // Register with Firebase
+      await registerWithEmailAndPassword(userData.email, userData.password);
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setUser(mockUser);
+      // Auth state listener will handle creating the user in our database
+      toast({
+        title: "Registration successful",
+        description: "Your account has been created. Welcome!",
+      });
     } catch (err: any) {
-      setError(err instanceof Error ? err.message : "Registration failed");
+      const errorMessage = err instanceof Error ? err.message : "Registration failed";
+      setError(errorMessage);
+      toast({
+        title: "Registration failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Simple logout function
+  // Logout function
   const logout = async () => {
     setIsLoading(true);
     
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Call Firebase logout
+      await logOut();
       
-      setUser(null);
+      // Auth state listener will update the user state
+      toast({
+        title: "Logged out",
+        description: "You have been logged out successfully",
+      });
     } catch (err: any) {
-      setError(err instanceof Error ? err.message : "Logout failed");
+      const errorMessage = err instanceof Error ? err.message : "Logout failed";
+      setError(errorMessage);
+      toast({
+        title: "Logout failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -125,6 +230,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     isLoading,
     error,
     login,
+    loginWithGoogle,
     logout,
     register
   };
