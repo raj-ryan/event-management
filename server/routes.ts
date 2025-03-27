@@ -50,6 +50,16 @@ async function ensureDefaultDemoUser() {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Simple ping endpoint for deployment testing
+  app.get("/api/ping", (req, res) => {
+    res.json({ 
+      status: "ok", 
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || "development",
+      version: "1.0"
+    });
+  });
+  
   // Set up authentication routes
   setupAuth(app);
   
