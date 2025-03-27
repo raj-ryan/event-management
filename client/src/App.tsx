@@ -8,6 +8,7 @@ import DashboardPage from "./pages/dashboard-page";
 import EventsPage from "./pages/events-page";
 import VenuesPage from "./pages/venues-page";
 import VenueForm from "./pages/venues/venue-form";
+import VenueDetail from "./pages/venues/venue-detail";
 import BookingsPage from "./pages/bookings-page";
 import CheckoutPage from "./pages/checkout-page";
 import NotFound from "./pages/not-found";
@@ -23,6 +24,7 @@ function App() {
         <ProtectedRoute path="/venues" component={VenuesPage} />
         <ProtectedRoute path="/venues/new" component={VenueForm} />
         <ProtectedRoute path="/venues/edit/:id" component={VenueForm} />
+        <ProtectedRoute path="/venues/:id" component={VenueDetail} />
         <ProtectedRoute path="/bookings" component={BookingsPage} />
         <ProtectedRoute path="/checkout" component={CheckoutPage} />
         <Route component={NotFound} />

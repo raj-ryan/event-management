@@ -242,6 +242,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.post("/api/venue-bookings", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      const userId = req.user.id;
+      const { venueId, bookingDate, bookingDuration, attendeeCount } = req.body;
+      
+      // Fetch venue to calculate total amount
+      const venue = await storage.getVenue(venueId);
+      if (!venue) {
+        return res.status(404).json({ message: "Venue not found" });
+      }
+      
+      // Calculate total amount (price per hour * duration)
+      const totalAmount = venue.price * bookingDuration;
+      
+      // Create booking with venue info
+      const booking = await storage.createBooking({
+        userId,
+        venueId,
+        bookingDate: new Date(bookingDate),
+        bookingDuration,
+        attendeeCount,
+        totalAmount,
+        ticketCount: 1,
+        status: "pending",
+        paymentStatus: "pending"
+      });
+      
+      res.status(201).json(booking);
+      
+      // Create a notification for the user
+      const notification = await storage.createNotification({
+        userId,
+        message: `Your venue booking for ${venue.name} has been created.`,
+        type: "venue_booking_created",
+        read: false
+      });
+      
+      // Send real-time notification
+      ws.sendNotification(userId, notification);
+    } catch (error) {
+      console.error("Error creating venue booking:", error);
+      res.status(500).json({ 
+        message: "Error creating venue booking",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+  
   app.post("/api/bookings", async (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Not authenticated" });
@@ -353,7 +405,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Update booking status
       await storage.updateBooking(bookingId, {
-        paymentStatus: "paid",
+        paymentStatus: "completed",
         status: "confirmed"
       });
       

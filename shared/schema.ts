@@ -69,9 +69,13 @@ export const events = pgTable("events", {
 export const bookings = pgTable("bookings", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
-  eventId: integer("event_id").references(() => events.id).notNull(),
-  status: text("status").default("pending").notNull(),
-  paymentStatus: text("payment_status").default("pending").notNull(),
+  eventId: integer("event_id").references(() => events.id),
+  venueId: integer("venue_id").references(() => venues.id),
+  bookingDate: timestamp("booking_date"),
+  bookingDuration: integer("booking_duration"), // in hours
+  attendeeCount: integer("attendee_count"),
+  status: text("status", { enum: ["pending", "confirmed", "cancelled", "completed"] }).default("pending").notNull(),
+  paymentStatus: text("payment_status", { enum: ["pending", "completed", "failed", "refunded"] }).default("pending").notNull(),
   ticketCount: integer("ticket_count").default(1).notNull(),
   totalAmount: doublePrecision("total_amount").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -151,6 +155,7 @@ export const venuesRelations = relations(venues, ({ one, many }) => ({
     relationName: "userVenues",
   }),
   events: many(events, { relationName: "venueEvents" }),
+  bookings: many(bookings, { relationName: "venueBookings" }),
 }));
 
 export const eventsRelations = relations(events, ({ one, many }) => ({
@@ -178,6 +183,11 @@ export const bookingsRelations = relations(bookings, ({ one, many }) => ({
     fields: [bookings.eventId],
     references: [events.id],
     relationName: "eventBookings",
+  }),
+  venue: one(venues, {
+    fields: [bookings.venueId],
+    references: [venues.id],
+    relationName: "venueBookings",
   }),
   payment: many(payments, { relationName: "bookingPayment" }),
   attendees: many(attendees, { relationName: "bookingAttendees" }),
@@ -282,10 +292,20 @@ export const updateEventSchema = createInsertSchema(events)
   })
   .partial();
 
-export const insertBookingSchema = createInsertSchema(bookings).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertBookingSchema = createInsertSchema(bookings)
+  .omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true,
+  });
+
+export const insertVenueBookingSchema = z.object({
+  userId: z.number(),
+  venueId: z.number(),
+  bookingDate: z.date(),
+  bookingDuration: z.number().min(1, "Booking must be at least 1 hour"),
+  attendeeCount: z.number().min(1, "Must have at least 1 attendee"),
+  totalAmount: z.number(),
 });
 
 export const updateBookingSchema = createInsertSchema(bookings)
@@ -333,6 +353,7 @@ export type UpdateEvent = z.infer<typeof updateEventSchema>;
 export type Event = typeof events.$inferSelect;
 
 export type InsertBooking = z.infer<typeof insertBookingSchema>;
+export type InsertVenueBooking = z.infer<typeof insertVenueBookingSchema>;
 export type UpdateBooking = z.infer<typeof updateBookingSchema>;
 export type Booking = typeof bookings.$inferSelect;
 
