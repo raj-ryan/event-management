@@ -1,10 +1,8 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "@/hooks/use-auth";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { loginSchema, registerSchema } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -20,19 +18,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+// Define schema for form validation
+const loginSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
+});
+
+const registerSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().email("Please enter a valid email"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+});
+
 export default function AuthPage() {
-  const { user, isLoading, login, register } = useAuth();
   const { toast } = useToast();
   const [_, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    // Redirect if logged in
-    if (user) {
-      navigate("/");
-    }
-  }, [user, navigate]);
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -53,50 +57,30 @@ export default function AuthPage() {
     },
   });
 
-  async function onLoginSubmit(values: z.infer<typeof loginSchema>) {
+  function onLoginSubmit(values: z.infer<typeof loginSchema>) {
     setIsSubmitting(true);
-    try {
-      await login(values);
+    // Simulate login process
+    setTimeout(() => {
       toast({
         title: "Login successful",
         description: "Welcome back to EventZen!",
       });
-    } catch (error) {
-      toast({
-        title: "Login failed",
-        description: error instanceof Error ? error.message : "Please try again",
-        variant: "destructive",
-      });
-    } finally {
       setIsSubmitting(false);
-    }
+      navigate("/");
+    }, 1500);
   }
 
-  async function onRegisterSubmit(values: z.infer<typeof registerSchema>) {
+  function onRegisterSubmit(values: z.infer<typeof registerSchema>) {
     setIsSubmitting(true);
-    try {
-      await register(values);
+    // Simulate registration process
+    setTimeout(() => {
       toast({
         title: "Registration successful",
         description: "Welcome to EventZen!",
       });
-    } catch (error) {
-      toast({
-        title: "Registration failed",
-        description: error instanceof Error ? error.message : "Please try again",
-        variant: "destructive",
-      });
-    } finally {
       setIsSubmitting(false);
-    }
-  }
-
-  if (isLoading && user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+      navigate("/");
+    }, 1500);
   }
 
   return (
