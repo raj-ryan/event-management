@@ -5,26 +5,23 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User } from "@shared/schema";
 import { z } from "zod";
 
-// Define a type for user with password that includes what we need
-type UserWithPassword = {
+// Define the User interface
+type DbUser = {
   id: number;
   username: string;
   email: string;
   password: string;
-  firstName?: string | null;
-  lastName?: string | null;
+  firstName: string | null;
+  lastName: string | null;
   role: string;
   createdAt: Date;
-  updatedAt?: Date;
 };
 
 declare global {
   namespace Express {
-    // Extend the Express User interface
-    interface User extends UserWithPassword {}
+    interface User extends DbUser {}
   }
 }
 
@@ -88,7 +85,7 @@ export function setupAuth(app: Express) {
     }),
   );
 
-  passport.serializeUser((user, done) => done(null, user.id));
+  passport.serializeUser((user: Express.User, done) => done(null, user.id));
   passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUser(id);
@@ -140,7 +137,7 @@ export function setupAuth(app: Express) {
       // Validate login data
       loginSchema.parse(req.body);
       
-      passport.authenticate("local", (err: any, user: UserWithPassword | false, info: any) => {
+      passport.authenticate("local", (err: any, user: Express.User | false, info: any) => {
         if (err) return next(err);
         if (!user) {
           return res.status(401).json({ message: "Invalid username or password" });
