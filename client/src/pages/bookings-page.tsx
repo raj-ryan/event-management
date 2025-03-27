@@ -31,8 +31,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Event, Venue, Booking } from "@shared/schema";
 
+// Extended interfaces for the event and venue with relations
+interface EventWithVenue extends Event {
+  venue?: { name: string };
+}
+
 interface BookingWithDetails extends Booking {
-  event?: Event;
+  event?: EventWithVenue;
   venue?: Venue;
 }
 
@@ -65,9 +70,9 @@ export default function BookingsPage() {
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case "confirmed":
-        return "success";
+        return "default"; // Using default for "success" state
       case "pending":
-        return "warning";
+        return "secondary"; // Using secondary for "warning" state
       case "cancelled":
         return "destructive";
       case "completed":

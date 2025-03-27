@@ -1,7 +1,7 @@
-import { Route } from "wouter";
+import { Route, useLocation } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
+import { Loader2 } from "lucide-react";
 
-// For now, this is a simplified version that always renders the component
-// without authentication checks to enable navigation between all pages
 export function ProtectedRoute({
   path,
   component: Component,
@@ -9,5 +9,28 @@ export function ProtectedRoute({
   path: string;
   component: () => React.JSX.Element;
 }) {
-  return <Route path={path} component={Component} />;
+  const { user, isLoading } = useAuth();
+  const [_, navigate] = useLocation();
+
+  return (
+    <Route path={path}>
+      {() => {
+        if (isLoading) {
+          return (
+            <div className="flex items-center justify-center min-h-screen">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          );
+        }
+        
+        if (!user) {
+          // Redirect to auth page if not logged in
+          setTimeout(() => navigate("/auth"), 0);
+          return null;
+        }
+        
+        return <Component />;
+      }}
+    </Route>
+  );
 }

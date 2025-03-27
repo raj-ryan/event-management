@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useState } from "react";
+import React, { createContext, ReactNode, useContext, useState } from "react";
 import { z } from "zod";
 
 // Define the User type (simplified for now)
@@ -25,6 +25,16 @@ export const registerSchema = z.object({
   lastName: z.string().optional(),
 });
 
+// Create default values for AuthContext
+const defaultContextValue = {
+  user: null,
+  isLoading: false,
+  error: null,
+  login: async () => {},
+  logout: async () => {},
+  register: async () => {},
+};
+
 // Simplified AuthContext to ensure it renders initially
 interface AuthContextType {
   user: User | null;
@@ -35,9 +45,9 @@ interface AuthContextType {
   register: (userData: z.infer<typeof registerSchema>) => Promise<void>;
 }
 
-export const AuthContext = createContext<AuthContextType | null>(null);
+export const AuthContext = createContext<AuthContextType>(defaultContextValue as AuthContextType);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       setUser(mockUser);
-    } catch (err) {
+    } catch (err: any) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
       setIsLoading(false);
@@ -87,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       setUser(mockUser);
-    } catch (err) {
+    } catch (err: any) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
       setIsLoading(false);
@@ -103,28 +113,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await new Promise(resolve => setTimeout(resolve, 500));
       
       setUser(null);
-    } catch (err) {
+    } catch (err: any) {
       setError(err instanceof Error ? err.message : "Logout failed");
     } finally {
       setIsLoading(false);
     }
   };
 
+  const contextValue = {
+    user,
+    isLoading,
+    error,
+    login,
+    logout,
+    register
+  };
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        error,
-        login,
-        logout,
-        register
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
 export function useAuth() {
   const context = useContext(AuthContext);
