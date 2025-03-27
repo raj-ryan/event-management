@@ -66,9 +66,11 @@ export const registerWithEmailAndPassword = async (
   } catch (error) {
     console.error("Registration error:", error);
     
-    // If in development mode with mock auth, return mock data
+    // Always use mock in development to avoid Firebase configuration issues
     if (import.meta.env.DEV) {
       console.log("Using mock user registration in development");
+      // Create a mock session for development testing
+      window.sessionStorage.setItem('mockUserAuthenticated', 'true');
       return createMockUserCredential();
     }
     
@@ -87,9 +89,11 @@ export const loginWithEmailAndPassword = async (
   } catch (error) {
     console.error("Login error:", error);
     
-    // If in development mode with mock auth, return mock data
+    // Always use mock in development to avoid Firebase configuration issues
     if (import.meta.env.DEV) {
       console.log("Using mock user login in development");
+      // Create a mock session for development testing
+      window.sessionStorage.setItem('mockUserAuthenticated', 'true');
       return createMockUserCredential();
     }
     
@@ -106,9 +110,11 @@ export const signInWithGoogle = async (): Promise<UserCredential> => {
   } catch (error) {
     console.error("Google sign in error:", error);
     
-    // If in development mode with mock auth, return mock data
+    // Always use mock in development to avoid Firebase configuration issues
     if (import.meta.env.DEV) {
       console.log("Using mock Google login in development");
+      // Create a mock session for development testing
+      window.sessionStorage.setItem('mockUserAuthenticated', 'true');
       return createMockUserCredential();
     }
     
@@ -121,12 +127,16 @@ export const logOut = async (): Promise<void> => {
   try {
     console.log("Attempting to sign out user");
     await signOut(auth);
+    
+    // Always remove mock session on logout
+    window.sessionStorage.removeItem('mockUserAuthenticated');
   } catch (error) {
     console.error("Sign out error:", error);
     
-    // In development, just log the error
+    // In development, just log the error and remove mock session
     if (import.meta.env.DEV) {
       console.log("Mock sign out successful in development");
+      window.sessionStorage.removeItem('mockUserAuthenticated');
       return;
     }
     

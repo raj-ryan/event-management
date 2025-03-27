@@ -7,7 +7,10 @@ const firebaseConfig = {
   authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID || 'mock-project'}.firebaseapp.com`,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'mock-project',
   storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID || 'mock-project'}.appspot.com`,
+  messagingSenderId: "296459273205", // Adding commonly needed config
   appId: import.meta.env.VITE_FIREBASE_APP_ID || 'mock-app-id',
+  // Allow direct emulator connection in development
+  ...(import.meta.env.DEV ? { emulator: true } : {})
 };
 
 // Log configuration for debugging

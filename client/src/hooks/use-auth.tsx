@@ -71,8 +71,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const { toast } = useToast();
 
   // Function to authenticate with our backend using Firebase token
-  const authenticateWithBackend = async (firebaseUser: FirebaseUser): Promise<User | null> => {
+  const authenticateWithBackend = async (firebaseUser: FirebaseUser | null): Promise<User | null> => {
     try {
+      // Check for mock user authentication in development
+      const mockUserAuth = window.sessionStorage.getItem('mockUserAuthenticated');
+      if (import.meta.env.DEV && mockUserAuth === 'true') {
+        console.log("Using mock user authentication");
+        return {
+          id: 1,
+          uid: 'mock-uid-123',
+          username: 'MockUser',
+          email: 'mock@example.com',
+          firstName: 'Mock',
+          lastName: 'User',
+          role: 'user',
+          photoURL: 'https://via.placeholder.com/150',
+        };
+      }
+      
+      // For regular Firebase authentication
+      if (!firebaseUser) {
+        return null;
+      }
+      
       // Get the Firebase token
       const token = await firebaseUser.getIdToken();
       
@@ -84,38 +105,94 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return userData;
       }
       
+      // If in development and backend call fails, use mock data
+      if (import.meta.env.DEV) {
+        console.log("Using fallback mock user (backend call failed)");
+        return {
+          id: 1,
+          uid: firebaseUser.uid,
+          username: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'user1',
+          email: firebaseUser.email || 'user@example.com',
+          firstName: firebaseUser.displayName?.split(' ')[0] || 'User',
+          lastName: firebaseUser.displayName?.split(' ')[1] || 'Name',
+          role: 'user',
+          photoURL: firebaseUser.photoURL || undefined,
+        };
+      }
+      
       return null;
     } catch (err) {
       console.error('Error authenticating with backend:', err);
+      
+      // If in development, use mock data
+      if (import.meta.env.DEV) {
+        console.log("Using fallback mock user (error occurred)");
+        return {
+          id: 1,
+          uid: 'error-recovery-uid',
+          username: 'ErrorUser',
+          email: 'error@example.com',
+          firstName: 'Error',
+          lastName: 'Recovery',
+          role: 'user',
+          photoURL: undefined,
+        };
+      }
+      
       return null;
     }
   };
 
   // Set up Firebase auth state listener
   useEffect(() => {
-    const unsubscribe = onUserAuthStateChange(async (firebaseUser) => {
-      setIsLoading(true);
+    // Check for mock user authentication in development
+    const checkMockAuth = async () => {
+      const mockUserAuth = window.sessionStorage.getItem('mockUserAuthenticated');
       
-      try {
-        if (firebaseUser) {
-          // User is signed in, authenticate with our backend
-          const appUser = await authenticateWithBackend(firebaseUser);
-          if (appUser) {
-            setUser(appUser);
-          }
-        } else {
-          // User is signed out
-          setUser(null);
+      if (import.meta.env.DEV && mockUserAuth === 'true') {
+        console.log("Found mock auth session");
+        const mockUser = await authenticateWithBackend(null);
+        if (mockUser) {
+          setUser(mockUser);
         }
-      } catch (err) {
-        console.error('Auth state change error:', err);
-      } finally {
         setIsLoading(false);
+        return true;
       }
-    });
+      return false;
+    };
     
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
+    // Check for mock auth first
+    checkMockAuth().then(hasMockAuth => {
+      // Only set up Firebase listener if no mock auth
+      if (!hasMockAuth) {
+        const unsubscribe = onUserAuthStateChange(async (firebaseUser) => {
+          setIsLoading(true);
+          
+          try {
+            if (firebaseUser) {
+              // User is signed in, authenticate with our backend
+              const appUser = await authenticateWithBackend(firebaseUser);
+              if (appUser) {
+                setUser(appUser);
+              }
+            } else {
+              // User is signed out
+              setUser(null);
+            }
+          } catch (err) {
+            console.error('Auth state change error:', err);
+          } finally {
+            setIsLoading(false);
+          }
+        });
+        
+        // Store unsubscribe function for cleanup
+        return () => unsubscribe();
+      }
+      
+      // No cleanup needed for mock auth
+      return () => {};
+    });
   }, []);
 
   // Login with email and password

@@ -1,6 +1,6 @@
 import { Route, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 export function AuthRedirectRoute({
@@ -13,12 +13,30 @@ export function AuthRedirectRoute({
   const { user, isLoading } = useAuth();
   const [_, navigate] = useLocation();
 
-  // Redirect to dashboard if user is logged in
+  // Check for admin or mock user authentication
+  const [isAdminOrMockUser, setIsAdminOrMockUser] = useState<boolean>(false);
+  
   useEffect(() => {
-    if (user && !isLoading) {
+    const adminAuth = window.sessionStorage.getItem('adminAuthenticated');
+    const mockUserAuth = window.sessionStorage.getItem('mockUserAuthenticated');
+    
+    setIsAdminOrMockUser(adminAuth === 'true' || mockUserAuth === 'true');
+    
+    console.log("Auth redirect check:", {
+      user,
+      isAdmin: adminAuth === 'true',
+      isMockUser: mockUserAuth === 'true',
+    });
+    
+  }, [user]);
+
+  // Redirect to dashboard if user is logged in or admin/mock auth exists
+  useEffect(() => {
+    if ((user || isAdminOrMockUser) && !isLoading) {
+      console.log("Redirecting to dashboard from auth page");
       navigate("/dashboard");
     }
-  }, [user, isLoading, navigate]);
+  }, [user, isAdminOrMockUser, isLoading, navigate]);
 
   return (
     <Route path={path}>
@@ -31,8 +49,8 @@ export function AuthRedirectRoute({
           );
         }
         
-        // Only show the component if user is not logged in
-        if (!user) {
+        // Only show the component if user is not logged in and no admin/mock auth
+        if (!user && !isAdminOrMockUser) {
           return <Component />;
         }
         

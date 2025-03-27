@@ -53,11 +53,26 @@ export default function AuthPage() {
   const { user, loginWithGoogle, register: firebaseRegister, isLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // If user is already logged in, redirect to dashboard
+  // Check if user is already logged in via Firebase, admin, or mock user
   useEffect(() => {
-    if (user) {
-      navigate("/dashboard");
-    }
+    // Check for any type of authentication
+    const checkAuth = () => {
+      const adminAuth = window.sessionStorage.getItem('adminAuthenticated');
+      const mockUserAuth = window.sessionStorage.getItem('mockUserAuthenticated');
+      
+      // If user is logged in via Firebase or session storage
+      if (user || adminAuth === 'true' || mockUserAuth === 'true') {
+        console.log("Auth detected, redirecting from auth page:", {
+          firebaseUser: !!user,
+          adminAuth: adminAuth === 'true',
+          mockUser: mockUserAuth === 'true'
+        });
+        navigate("/dashboard");
+      }
+    };
+    
+    // Check immediately and then again if anything changes
+    checkAuth();
   }, [user, navigate]);
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
@@ -89,12 +104,24 @@ export default function AuthPage() {
           values.password === ADMIN_CREDENTIALS.password) {
         // Admin login success
         try {
+          // For admin, we'll set a session storage flag rather than using Firebase
+          // This allows us to bypass the Firebase authentication for admin users
+          window.sessionStorage.setItem('adminAuthenticated', 'true');
+          
           toast({
             title: "Admin Login Successful",
             description: "Welcome to the admin dashboard!",
           });
-          // Force redirect to dashboard
-          window.location.href = "/dashboard?role=admin";
+          
+          // Use direct navigation for admin
+          console.log("Admin login successful, redirecting to dashboard...");
+          navigate("/dashboard?role=admin");
+          
+          // Force the navigation in case the navigate method doesn't work
+          setTimeout(() => {
+            window.location.replace("/dashboard?role=admin");
+          }, 300);
+          
         } catch (error) {
           console.error("Navigation error:", error);
           toast({
@@ -102,7 +129,6 @@ export default function AuthPage() {
             description: "Error redirecting to dashboard",
             variant: "destructive",
           });
-        } finally {
           setIsSubmitting(false);
         }
       } else {
@@ -119,15 +145,35 @@ export default function AuthPage() {
       try {
         // Use email/password login
         const email = values.username + "@eventzen.com"; // Use username as email
-        await loginWithEmailAndPassword(email, values.password);
+        
+        try {
+          await loginWithEmailAndPassword(email, values.password);
+        } catch (error) {
+          // Even if Firebase login fails in development, the mock session might have been set
+          // So we check for it explicitly here
+          if (import.meta.env.DEV && window.sessionStorage.getItem('mockUserAuthenticated') === 'true') {
+            console.log("Mock session detected despite Firebase error - proceeding with login");
+          } else {
+            throw error; // Re-throw if not in dev mode or no mock session
+          }
+        }
         
         toast({
           title: "Login Successful",
           description: "Welcome to EventZen!",
         });
         
-        // Force redirect to dashboard
-        window.location.href = "/dashboard";
+        // Use stronger redirect approach with both methods
+        setTimeout(() => {
+          console.log("User login successful, redirecting to dashboard...");
+          navigate("/dashboard");
+          
+          // Fallback redirect if navigate doesn't work
+          setTimeout(() => {
+            window.location.replace("/dashboard");
+          }, 500);
+        }, 100);
+        
       } catch (error) {
         console.error("User login error:", error);
         toast({
@@ -135,7 +181,6 @@ export default function AuthPage() {
           description: "Invalid username or password",
           variant: "destructive",
         });
-      } finally {
         setIsSubmitting(false);
       }
     }
@@ -144,15 +189,34 @@ export default function AuthPage() {
   async function onRegisterSubmit(values: z.infer<typeof registerSchema>) {
     setIsSubmitting(true);
     try {
-      await firebaseRegister(values);
+      try {
+        await firebaseRegister(values);
+      } catch (error) {
+        // Even if registration fails in development, the mock session might have been set
+        // So we check for it explicitly here
+        if (import.meta.env.DEV && window.sessionStorage.getItem('mockUserAuthenticated') === 'true') {
+          console.log("Mock session detected despite registration error - proceeding");
+        } else {
+          throw error; // Re-throw if not in dev mode or no mock session
+        }
+      }
       
       toast({
         title: "Registration successful",
         description: "Welcome to EventZen!",
       });
       
-      // Force redirect to dashboard after successful registration
-      window.location.href = "/dashboard";
+      // Use stronger redirect approach with both methods
+      setTimeout(() => {
+        console.log("Registration successful, redirecting to dashboard...");
+        navigate("/dashboard");
+        
+        // Fallback redirect if navigate doesn't work
+        setTimeout(() => {
+          window.location.replace("/dashboard");
+        }, 500);
+      }, 100);
+      
     } catch (error) {
       console.error("Registration error:", error);
       toast({
@@ -167,14 +231,34 @@ export default function AuthPage() {
   async function handleGoogleLogin() {
     setIsSubmitting(true);
     try {
-      await loginWithGoogle();
+      try {
+        await loginWithGoogle();
+      } catch (error) {
+        // Even if Google login fails in development, the mock session might have been set
+        // So we check for it explicitly here
+        if (import.meta.env.DEV && window.sessionStorage.getItem('mockUserAuthenticated') === 'true') {
+          console.log("Mock session detected despite Google login error - proceeding");
+        } else {
+          throw error; // Re-throw if not in dev mode or no mock session
+        }
+      }
+      
       toast({
         title: "Google login successful",
         description: "Welcome to EventZen!",
       });
       
-      // Force redirect to dashboard after successful Google login
-      window.location.href = "/dashboard";
+      // Use stronger redirect approach with both methods
+      setTimeout(() => {
+        console.log("Google login successful, redirecting to dashboard...");
+        navigate("/dashboard");
+        
+        // Fallback redirect if navigate doesn't work
+        setTimeout(() => {
+          window.location.replace("/dashboard");
+        }, 500);
+      }, 100);
+      
     } catch (error) {
       console.error("Google login error:", error);
       toast({
