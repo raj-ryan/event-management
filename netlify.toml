@@ -40,6 +40,9 @@
   status = 200
   force = true
 
+<<<<<<< HEAD
 # Remove plugin reference as it's not available in npm registry
 # [[plugins]]
 #  package = "@netlify/plugin-functions-core"
+=======
+>>>>>>> 58fd7d2 (Fix: Remove outdated Netlify plugin and update deployment configuration.)
