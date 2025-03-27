@@ -51,8 +51,19 @@ export function useWebSocket() {
     // Create WebSocket connection
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/ws`;
       
+      // Different WebSocket URL depending on environment
+      let wsUrl;
+      if (import.meta.env.PROD && window.location.host.includes('netlify.app')) {
+        // For Netlify, we need to use their WebSocket service
+        // This requires Netlify Functions + WebSocket support
+        wsUrl = `${protocol}//${window.location.host}/.netlify/functions/ws`;
+      } else {
+        // Local development
+        wsUrl = `${protocol}//${window.location.host}/ws`;
+      }
+      
+      console.log('Connecting to WebSocket at:', wsUrl);
       const socket = new WebSocket(wsUrl);
       socketRef.current = socket;
 
@@ -115,7 +126,10 @@ export function useWebSocket() {
   // Mark notification as read
   const markNotificationAsRead = useCallback(async (notificationId: number) => {
     try {
-      const response = await fetch(`/api/notifications/${notificationId}/read`, {
+      // Import our environment utility for API URL formatting
+      const { getApiUrl } = await import('../lib/environment');
+      
+      const response = await fetch(getApiUrl(`/api/notifications/${notificationId}/read`), {
         method: 'PUT',
         credentials: 'include',
       });

@@ -56,8 +56,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server
   const httpServer = createServer(app);
   
-  // Set up WebSockets
-  const ws = setupWebSockets(httpServer);
+  // Check if we're running in a Netlify Function environment
+  const isNetlifyFunction = process.env.NETLIFY || process.env.CONTEXT === 'production' || process.env.CONTEXT === 'deploy-preview';
+  
+  // Set up WebSockets only if we're not in a Netlify Function environment
+  // because Netlify Functions have a separate WebSocket handler
+  const ws = isNetlifyFunction 
+    ? {
+        // Provide dummy methods that do nothing when running in Netlify
+        sendNotification: () => {},
+        broadcastEventUpdate: () => {}
+      }
+    : setupWebSockets(httpServer);
   
   // Create default demo user for non-authenticated requests
   await ensureDefaultDemoUser();
@@ -87,6 +97,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           uid: decodedToken.uid,
           username: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || `user_${Date.now()}`,
           email: firebaseUser.email || '',
+          password: 'firebase-auth-user', // Firebase users don't need a password in our DB
           firstName: firebaseUser.displayName?.split(' ')[0] || '',
           lastName: firebaseUser.displayName?.split(' ').slice(1).join(' ') || '',
           photoURL: firebaseUser.photoURL || '',
@@ -98,7 +109,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Login the user using session-based authentication
-      req.login(user, (err) => {
+      // Type assertion to solve type compatibility issues
+      req.login(user as Express.User, (err) => {
         if (err) {
           return res.status(500).json({ message: "Authentication error" });
         }
