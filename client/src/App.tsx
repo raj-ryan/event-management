@@ -1,6 +1,7 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { ProtectedRoute } from "./lib/protected-route";
-import { AuthRedirectRoute } from "./lib/auth-redirect-route";
+import { useAuth } from "./hooks/use-auth";
+import { useEffect } from "react";
 
 // Pages
 import HomePage from "./pages/home-page";
@@ -14,12 +15,34 @@ import BookingsPage from "./pages/bookings-page";
 import CheckoutPage from "./pages/checkout-page";
 import NotFound from "./pages/not-found";
 
+// Redirects to dashboard if user is logged in
+function AuthRedirect({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  const [_, navigate] = useLocation();
+  
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
+  
+  return <>{children}</>;
+}
+
 function App() {
   return (
     <div className="min-h-screen bg-background">
       <Switch>
-        <AuthRedirectRoute path="/" component={HomePage} />
-        <AuthRedirectRoute path="/auth" component={AuthPage} />
+        <Route path="/">
+          <AuthRedirect>
+            <HomePage />
+          </AuthRedirect>
+        </Route>
+        <Route path="/auth">
+          <AuthRedirect>
+            <AuthPage />
+          </AuthRedirect>
+        </Route>
         <ProtectedRoute path="/dashboard" component={DashboardPage} />
         <ProtectedRoute path="/events" component={EventsPage} />
         <ProtectedRoute path="/venues" component={VenuesPage} />

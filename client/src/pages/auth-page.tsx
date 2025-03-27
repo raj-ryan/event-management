@@ -20,6 +20,7 @@ import { FcGoogle } from "react-icons/fc";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { loginWithEmailAndPassword } from "@/firebase/auth";
 
 // Admin credentials 
 const ADMIN_CREDENTIALS = {
@@ -79,7 +80,7 @@ export default function AuthPage() {
     },
   });
 
-  function onLoginSubmit(values: z.infer<typeof loginSchema>) {
+  async function onLoginSubmit(values: z.infer<typeof loginSchema>) {
     setIsSubmitting(true);
     
     // Check if admin login
@@ -87,34 +88,56 @@ export default function AuthPage() {
       if (values.username === ADMIN_CREDENTIALS.username && 
           values.password === ADMIN_CREDENTIALS.password) {
         // Admin login success
-        setTimeout(() => {
+        try {
           toast({
             title: "Admin Login Successful",
             description: "Welcome to the admin dashboard!",
           });
-          setIsSubmitting(false);
-          navigate("/dashboard?role=admin");
-        }, 1500);
-      } else {
-        // Admin login failed
-        setTimeout(() => {
+          // Force redirect to dashboard
+          window.location.href = "/dashboard?role=admin";
+        } catch (error) {
+          console.error("Navigation error:", error);
           toast({
-            title: "Admin Login Failed",
-            description: "Invalid admin credentials",
+            title: "Navigation Error",
+            description: "Error redirecting to dashboard",
             variant: "destructive",
           });
+        } finally {
           setIsSubmitting(false);
-        }, 1500);
-      }
-    } else {
-      // Regular user login with Firebase (email login is disabled for now)
-      setTimeout(() => {
+        }
+      } else {
+        // Admin login failed
         toast({
-          title: "User Login",
-          description: "Please use Google login for now",
+          title: "Admin Login Failed",
+          description: "Invalid admin credentials",
+          variant: "destructive",
         });
         setIsSubmitting(false);
-      }, 1000);
+      }
+    } else {
+      // For user login, we'll use the Firebase auth directly with email
+      try {
+        // Use email/password login
+        const email = values.username + "@eventzen.com"; // Use username as email
+        await loginWithEmailAndPassword(email, values.password);
+        
+        toast({
+          title: "Login Successful",
+          description: "Welcome to EventZen!",
+        });
+        
+        // Force redirect to dashboard
+        window.location.href = "/dashboard";
+      } catch (error) {
+        console.error("User login error:", error);
+        toast({
+          title: "Login Failed",
+          description: "Invalid username or password",
+          variant: "destructive",
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   }
 
@@ -122,10 +145,14 @@ export default function AuthPage() {
     setIsSubmitting(true);
     try {
       await firebaseRegister(values);
+      
       toast({
         title: "Registration successful",
         description: "Welcome to EventZen!",
       });
+      
+      // Force redirect to dashboard after successful registration
+      window.location.href = "/dashboard";
     } catch (error) {
       console.error("Registration error:", error);
       toast({
@@ -133,7 +160,6 @@ export default function AuthPage() {
         description: "Please try again",
         variant: "destructive",
       });
-    } finally {
       setIsSubmitting(false);
     }
   }
@@ -146,6 +172,9 @@ export default function AuthPage() {
         title: "Google login successful",
         description: "Welcome to EventZen!",
       });
+      
+      // Force redirect to dashboard after successful Google login
+      window.location.href = "/dashboard";
     } catch (error) {
       console.error("Google login error:", error);
       toast({
@@ -153,7 +182,6 @@ export default function AuthPage() {
         description: "Please try again",
         variant: "destructive",
       });
-    } finally {
       setIsSubmitting(false);
     }
   }
