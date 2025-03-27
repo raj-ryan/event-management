@@ -1,37 +1,35 @@
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
-import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { loginSchema, registerSchema } from "@/hooks/use-auth";
 import { z } from "zod";
+import { loginSchema, registerSchema } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 
 export default function AuthPage() {
-  const { user, loginMutation, registerMutation } = useAuth();
+  const { user, isLoading, loginMutation, registerMutation } = useAuth();
   const [_, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
 
-  useEffect(() => {
-    // Redirect if user is already logged in
-    if (user) {
-      navigate("/dashboard");
-    }
-  }, [user, navigate]);
+  // Redirect if already logged in
+  if (user) {
+    navigate("/");
+    return null;
+  }
 
-  // Login Form
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -40,7 +38,6 @@ export default function AuthPage() {
     },
   });
 
-  // Register Form
   const registerForm = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -52,55 +49,35 @@ export default function AuthPage() {
     },
   });
 
-  // Handle login form submission
   function onLoginSubmit(values: z.infer<typeof loginSchema>) {
-    loginMutation.mutate(values, {
-      onSuccess: () => {
-        navigate("/dashboard");
-      },
-    });
+    loginMutation.mutate(values);
   }
 
-  // Handle register form submission
   function onRegisterSubmit(values: z.infer<typeof registerSchema>) {
-    registerMutation.mutate(values, {
-      onSuccess: () => {
-        navigate("/dashboard");
-      },
-    });
+    registerMutation.mutate(values);
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen grid md:grid-cols-2">
-      {/* Left side - Auth Form */}
-      <div className="flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
-          <div className="mb-8 text-center">
-            <div className="flex items-center justify-center mb-6">
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">E</span>
-              </div>
-              <span className="ml-2 text-xl font-heading font-bold">EventZen</span>
-            </div>
-            <h1 className="text-2xl font-bold mb-2">Welcome to EventZen</h1>
-            <p className="text-muted-foreground">
-              {activeTab === "login" 
-                ? "Log in to access your account"
-                : "Create a new account to get started"}
-            </p>
-          </div>
-
-          <Tabs
-            defaultValue="login"
-            value={activeTab}
-            onValueChange={(value) => setActiveTab(value as "login" | "register")}
-            className="w-full"
-          >
+    <div className="flex min-h-screen">
+      {/* Form Section */}
+      <div className="flex flex-col justify-center w-full lg:w-1/2 p-8">
+        <div className="mx-auto w-full max-w-md">
+          <h1 className="text-3xl font-bold mb-8 text-center">EventZen</h1>
+          
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "login" | "register")}>
             <TabsList className="grid w-full grid-cols-2 mb-8">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="register">Register</TabsTrigger>
             </TabsList>
-
+            
             <TabsContent value="login">
               <Form {...loginForm}>
                 <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-6">
@@ -117,7 +94,7 @@ export default function AuthPage() {
                       </FormItem>
                     )}
                   />
-
+                  
                   <FormField
                     control={loginForm.control}
                     name="password"
@@ -131,40 +108,21 @@ export default function AuthPage() {
                       </FormItem>
                     )}
                   />
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox id="remember" />
-                      <label
-                        htmlFor="remember"
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        Remember me
-                      </label>
-                    </div>
-                    <a href="#" className="text-sm text-primary hover:text-primary-dark">
-                      Forgot password?
-                    </a>
-                  </div>
-
-                  <Button
-                    type="submit"
-                    className="w-full"
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
                     disabled={loginMutation.isPending}
                   >
                     {loginMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Logging in...
-                      </>
-                    ) : (
-                      "Log In"
-                    )}
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : null}
+                    Sign In
                   </Button>
                 </form>
               </Form>
             </TabsContent>
-
+            
             <TabsContent value="register">
               <Form {...registerForm}>
                 <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-6">
@@ -176,13 +134,13 @@ export default function AuthPage() {
                         <FormItem>
                           <FormLabel>First Name</FormLabel>
                           <FormControl>
-                            <Input placeholder="First name" {...field} />
+                            <Input placeholder="John" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-
+                    
                     <FormField
                       control={registerForm.control}
                       name="lastName"
@@ -190,14 +148,14 @@ export default function AuthPage() {
                         <FormItem>
                           <FormLabel>Last Name</FormLabel>
                           <FormControl>
-                            <Input placeholder="Last name" {...field} />
+                            <Input placeholder="Doe" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                   </div>
-
+                  
                   <FormField
                     control={registerForm.control}
                     name="username"
@@ -205,13 +163,13 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>Username</FormLabel>
                         <FormControl>
-                          <Input placeholder="Choose a username" {...field} />
+                          <Input placeholder="johndoe" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-
+                  
                   <FormField
                     control={registerForm.control}
                     name="email"
@@ -219,13 +177,13 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input type="email" placeholder="Enter your email" {...field} />
+                          <Input type="email" placeholder="john.doe@example.com" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-
+                  
                   <FormField
                     control={registerForm.control}
                     name="password"
@@ -235,44 +193,23 @@ export default function AuthPage() {
                         <FormControl>
                           <Input type="password" placeholder="Create a password" {...field} />
                         </FormControl>
+                        <FormDescription>
+                          At least 6 characters
+                        </FormDescription>
                         <FormMessage />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Must be at least 6 characters
-                        </p>
                       </FormItem>
                     )}
                   />
-
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="terms" required />
-                    <label
-                      htmlFor="terms"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      I agree to the{" "}
-                      <a href="#" className="text-primary hover:text-primary-dark">
-                        Terms of Service
-                      </a>{" "}
-                      and{" "}
-                      <a href="#" className="text-primary hover:text-primary-dark">
-                        Privacy Policy
-                      </a>
-                    </label>
-                  </div>
-
-                  <Button
-                    type="submit"
-                    className="w-full"
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
                     disabled={registerMutation.isPending}
                   >
                     {registerMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Creating account...
-                      </>
-                    ) : (
-                      "Create Account"
-                    )}
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : null}
+                    Create Account
                   </Button>
                 </form>
               </Form>
@@ -280,52 +217,32 @@ export default function AuthPage() {
           </Tabs>
         </div>
       </div>
-
-      {/* Right side - Hero Image */}
-      <div className="hidden md:block bg-gradient-to-r from-primary-light to-primary text-white p-12 flex items-center">
-        <div className="max-w-md mx-auto">
-          <h2 className="text-3xl font-bold mb-6">Discover & Manage Events with Ease</h2>
-          <p className="mb-8 text-lg opacity-90">
-            Find the perfect venues, plan unforgettable events, and manage every detail in one platform.
+      
+      {/* Hero Section */}
+      <div className="hidden lg:flex flex-col justify-center items-center w-1/2 bg-primary p-8 text-white">
+        <div className="max-w-lg">
+          <h2 className="text-4xl font-bold mb-6">Welcome to EventZen</h2>
+          <p className="text-xl mb-8">
+            The ultimate platform for event planning and venue booking.
           </p>
-          
-          <div className="space-y-4">
-            <div className="flex items-start">
-              <div className="flex-shrink-0 p-1">
-                <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-lg font-semibold">Easy Planning</h3>
-                <p className="mt-1 text-white text-opacity-80">Create and manage events with an intuitive interface.</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start">
-              <div className="flex-shrink-0 p-1">
-                <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-lg font-semibold">Secure Payments</h3>
-                <p className="mt-1 text-white text-opacity-80">Process ticket sales with our secure payment system.</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start">
-              <div className="flex-shrink-0 p-1">
-                <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-lg font-semibold">Real-time Updates</h3>
-                <p className="mt-1 text-white text-opacity-80">Get instant notifications about bookings and changes.</p>
-              </div>
-            </div>
-          </div>
+          <ul className="space-y-4 mb-8">
+            <li className="flex items-center">
+              <span className="mr-2">✓</span>
+              <span>Discover and book amazing venues</span>
+            </li>
+            <li className="flex items-center">
+              <span className="mr-2">✓</span>
+              <span>Create and manage your events</span>
+            </li>
+            <li className="flex items-center">
+              <span className="mr-2">✓</span>
+              <span>Real-time updates and notifications</span>
+            </li>
+            <li className="flex items-center">
+              <span className="mr-2">✓</span>
+              <span>Secure payment processing</span>
+            </li>
+          </ul>
         </div>
       </div>
     </div>
