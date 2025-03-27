@@ -34,9 +34,9 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     // Convert API URL if needed
-    const url = typeof queryKey[0] === 'string' ? getApiUrl(queryKey[0]) : queryKey[0];
+    const url = getApiUrl(queryKey);
     
-    const res = await fetch(url as string, {
+    const res = await fetch(url, {
       credentials: "include",
     });
 

@@ -65,7 +65,7 @@ export default function VenueList() {
     error,
     refetch
   } = useQuery<Venue[]>({
-    queryKey: ["venues"],
+    queryKey: ["/api/venues"],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/venues");
       return res.json();
