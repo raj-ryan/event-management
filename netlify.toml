@@ -35,6 +35,18 @@
   force = true
 
 [[redirects]]
+  from = "/netlify-verify.js"
+  to = "/netlify-verify.js"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/netlify-env-guide.md"
+  to = "/netlify-env-guide.md"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200

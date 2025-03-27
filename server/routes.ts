@@ -81,10 +81,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             capacity: 500,
             description: "A modern conference center in the heart of the city with state-of-the-art facilities.",
             amenities: ["Wi-Fi", "Projector", "Sound System", "Catering"],
-            images: ["https://example.com/venue1.jpg"],
-            contactEmail: "info@grandconference.com",
-            contactPhone: "555-123-4567",
-            pricePerHour: 250,
+            image: "https://example.com/venue1.jpg",
+            price: 250,
             createdBy: adminUser.id
           }
         ];
