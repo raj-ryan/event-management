@@ -13,6 +13,42 @@ const stripe = new Stripe(stripeKey, {
   apiVersion: "2023-10-16" as any,
 });
 
+// Default demo user ID for non-authenticated requests
+let DEFAULT_DEMO_USER_ID = 0;
+
+// Function to ensure we have a default user for demo purposes
+async function ensureDefaultDemoUser() {
+  try {
+    // Check if default user exists
+    const existingUser = await storage.getUserByEmail("demo@eventzen.com");
+    
+    if (existingUser) {
+      // If user exists, use their ID
+      DEFAULT_DEMO_USER_ID = existingUser.id;
+      console.log(`Using existing demo user with ID: ${DEFAULT_DEMO_USER_ID}`);
+      return existingUser;
+    }
+    
+    // Create a new default user if none exists
+    const demoUser = await storage.createUser({
+      username: "demo_user",
+      email: "demo@eventzen.com",
+      password: "password_hash", // Doesn't matter since we're not using passwords
+      role: "user",
+      firstName: "Demo",
+      lastName: "User",
+      uid: "demo_uid_" + Date.now(),
+    });
+    
+    DEFAULT_DEMO_USER_ID = demoUser.id;
+    console.log(`Created new demo user with ID: ${DEFAULT_DEMO_USER_ID}`);
+    return demoUser;
+  } catch (error) {
+    console.error("Error ensuring default user:", error);
+    throw error;
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes
   setupAuth(app);
@@ -22,6 +58,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Set up WebSockets
   const ws = setupWebSockets(httpServer);
+  
+  // Create default demo user for non-authenticated requests
+  await ensureDefaultDemoUser();
   
   // Firebase Authentication Routes
   app.post("/api/auth/verify-token", async (req, res) => {
@@ -165,7 +204,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       // If user is authenticated, use their ID, otherwise use a default ID of 1
-      const userId = req.isAuthenticated() ? req.user?.id : 1;
+      const userId = req.isAuthenticated() ? req.user?.id : DEFAULT_DEMO_USER_ID;
       const event = await storage.createEvent({ ...req.body, createdBy: userId });
       res.status(201).json(event);
     } catch (error) {
@@ -346,7 +385,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       // If user is authenticated, use their ID, otherwise use a default ID of 1
-      const userId = req.isAuthenticated() ? req.user.id : 1;
+      const userId = req.isAuthenticated() ? req.user.id : DEFAULT_DEMO_USER_ID;
       const bookings = await storage.getBookingsByUser(userId);
       res.json(bookings);
     } catch (error) {
@@ -362,7 +401,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       // If user is authenticated, use their ID, otherwise use a default ID of 1
-      const userId = req.isAuthenticated() ? req.user.id : 1;
+      const userId = req.isAuthenticated() ? req.user.id : DEFAULT_DEMO_USER_ID;
       const { venueId, bookingDate, bookingDuration, attendeeCount } = req.body;
       
       // Fetch venue to calculate total amount
@@ -416,7 +455,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       // If user is authenticated, use their ID, otherwise use a default ID of 1
-      const userId = req.isAuthenticated() ? req.user.id : 1;
+      const userId = req.isAuthenticated() ? req.user.id : DEFAULT_DEMO_USER_ID;
       const bookingData = { ...req.body, userId };
       
       // Fetch event to calculate total amount
@@ -562,7 +601,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       // If user is authenticated, use their ID, otherwise use a default ID of 1
-      const userId = req.isAuthenticated() ? req.user?.id : 1;
+      const userId = req.isAuthenticated() ? req.user?.id : DEFAULT_DEMO_USER_ID;
       const notifications = await storage.getNotificationsByUser(userId);
       res.json(notifications);
     } catch (error) {

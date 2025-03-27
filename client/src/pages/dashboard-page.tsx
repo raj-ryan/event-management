@@ -82,6 +82,12 @@ export default function DashboardPage() {
       action: () => navigate("/venues")
     },
     {
+      title: "Browse Events",
+      description: "Discover and book upcoming events",
+      icon: <Calendar className="h-8 w-8 text-primary" />,
+      action: () => navigate("/events")
+    },
+    {
       title: "Manage Bookings",
       description: "View and manage your event bookings",
       icon: <CalendarRange className="h-8 w-8 text-primary" />,
