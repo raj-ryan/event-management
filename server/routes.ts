@@ -429,8 +429,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If user is authenticated, use their ID, otherwise use a default ID of 1
       const userId = req.isAuthenticated() ? req.user.id : DEFAULT_DEMO_USER_ID;
       const bookings = await storage.getBookingsByUser(userId);
-      res.json(bookings);
+      
+      // Enhance bookings with event and venue details
+      const enhancedBookings = await Promise.all(bookings.map(async (booking) => {
+        let enhancedBooking: any = { ...booking };
+        
+        // Add event details if it's an event booking
+        if (booking.eventId) {
+          const event = await storage.getEvent(booking.eventId);
+          if (event) {
+            enhancedBooking.event = event;
+            
+            // Add venue details to event if applicable
+            if (event.venueId) {
+              const venue = await storage.getVenue(event.venueId);
+              if (venue) {
+                enhancedBooking.event.venue = venue;
+              }
+            }
+          }
+        }
+        
+        // Add venue details if it's a direct venue booking
+        if (booking.venueId) {
+          const venue = await storage.getVenue(booking.venueId);
+          if (venue) {
+            enhancedBooking.venue = venue;
+          }
+        }
+        
+        return enhancedBooking;
+      }));
+      
+      res.json(enhancedBookings);
     } catch (error) {
+      console.error("Error fetching bookings:", error);
       res.status(500).json({ message: "Error fetching bookings" });
     }
   });
