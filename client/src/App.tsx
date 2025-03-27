@@ -1,5 +1,6 @@
 import { Switch, Route } from "wouter";
 import { ProtectedRoute } from "./lib/protected-route";
+import { AuthRedirectRoute } from "./lib/auth-redirect-route";
 
 // Pages
 import HomePage from "./pages/home-page";
@@ -17,8 +18,8 @@ function App() {
   return (
     <div className="min-h-screen bg-background">
       <Switch>
-        <Route path="/" component={HomePage} />
-        <Route path="/auth" component={AuthPage} />
+        <AuthRedirectRoute path="/" component={HomePage} />
+        <AuthRedirectRoute path="/auth" component={AuthPage} />
         <ProtectedRoute path="/dashboard" component={DashboardPage} />
         <ProtectedRoute path="/events" component={EventsPage} />
         <ProtectedRoute path="/venues" component={VenuesPage} />
