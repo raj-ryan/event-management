@@ -1,9 +1,7 @@
-import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 
 export default function BookingsPage() {
-  const { user } = useAuth();
   const [_, navigate] = useLocation();
 
   return (

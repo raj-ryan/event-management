@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -22,6 +23,9 @@ import { useToast } from "@/hooks/use-toast";
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
+  userType: z.enum(["user", "admin"], {
+    required_error: "You need to select a user type",
+  }),
 });
 
 const registerSchema = z.object({
@@ -31,6 +35,12 @@ const registerSchema = z.object({
   firstName: z.string().optional(),
   lastName: z.string().optional(),
 });
+
+// Admin credentials (would normally come from backend)
+const ADMIN_CREDENTIALS = {
+  username: "admin",
+  password: "admin123"
+};
 
 export default function AuthPage() {
   const { toast } = useToast();
@@ -43,6 +53,7 @@ export default function AuthPage() {
     defaultValues: {
       username: "",
       password: "",
+      userType: "user",
     },
   });
 
@@ -59,15 +70,42 @@ export default function AuthPage() {
 
   function onLoginSubmit(values: z.infer<typeof loginSchema>) {
     setIsSubmitting(true);
-    // Simulate login process
-    setTimeout(() => {
-      toast({
-        title: "Login successful",
-        description: "Welcome back to EventZen!",
-      });
-      setIsSubmitting(false);
-      navigate("/");
-    }, 1500);
+    
+    // Check if admin login
+    if (values.userType === "admin") {
+      if (values.username === ADMIN_CREDENTIALS.username && 
+          values.password === ADMIN_CREDENTIALS.password) {
+        // Admin login success
+        setTimeout(() => {
+          toast({
+            title: "Admin Login Successful",
+            description: "Welcome to the admin dashboard!",
+          });
+          setIsSubmitting(false);
+          navigate("/dashboard");
+        }, 1500);
+      } else {
+        // Admin login failed
+        setTimeout(() => {
+          toast({
+            title: "Admin Login Failed",
+            description: "Invalid admin credentials",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+        }, 1500);
+      }
+    } else {
+      // Regular user login (always succeeds for demo)
+      setTimeout(() => {
+        toast({
+          title: "Login successful",
+          description: "Welcome back to EventZen!",
+        });
+        setIsSubmitting(false);
+        navigate("/dashboard");
+      }, 1500);
+    }
   }
 
   function onRegisterSubmit(values: z.infer<typeof registerSchema>) {
@@ -79,7 +117,7 @@ export default function AuthPage() {
         description: "Welcome to EventZen!",
       });
       setIsSubmitting(false);
-      navigate("/");
+      navigate("/dashboard");
     }, 1500);
   }
 
@@ -101,6 +139,41 @@ export default function AuthPage() {
                 <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-6">
                   <FormField
                     control={loginForm.control}
+                    name="userType"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel>Account Type</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="flex space-x-4"
+                          >
+                            <FormItem className="flex items-center space-x-2 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value="user" />
+                              </FormControl>
+                              <FormLabel className="font-normal cursor-pointer">
+                                User
+                              </FormLabel>
+                            </FormItem>
+                            <FormItem className="flex items-center space-x-2 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value="admin" />
+                              </FormControl>
+                              <FormLabel className="font-normal cursor-pointer">
+                                Admin
+                              </FormLabel>
+                            </FormItem>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                
+                  <FormField
+                    control={loginForm.control}
                     name="username"
                     render={({ field }) => (
                       <FormItem>
@@ -109,6 +182,11 @@ export default function AuthPage() {
                           <Input placeholder="Enter your username" {...field} />
                         </FormControl>
                         <FormMessage />
+                        {loginForm.watch("userType") === "admin" && (
+                          <FormDescription>
+                            Admin username: admin
+                          </FormDescription>
+                        )}
                       </FormItem>
                     )}
                   />
@@ -123,6 +201,11 @@ export default function AuthPage() {
                           <Input type="password" placeholder="Enter your password" {...field} />
                         </FormControl>
                         <FormMessage />
+                        {loginForm.watch("userType") === "admin" && (
+                          <FormDescription>
+                            Admin password: admin123
+                          </FormDescription>
+                        )}
                       </FormItem>
                     )}
                   />
