@@ -12,6 +12,16 @@ import { format } from "date-fns";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useQuery } from "@tanstack/react-query";
 
+// Define notification type
+interface Notification {
+  id: number;
+  userId: number;
+  message: string;
+  type: string;
+  read: boolean;
+  createdAt: string;
+}
+
 export default function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   
@@ -19,20 +29,20 @@ export default function NotificationBell() {
   const { notifications: wsNotifications, markNotificationAsRead } = useWebSocket();
   
   // Query existing notifications
-  const { data: fetchedNotifications = [] } = useQuery({
+  const { data: fetchedNotifications = [] } = useQuery<Notification[]>({
     queryKey: ["/api/notifications"],
     staleTime: 1000 * 60, // 1 minute
   });
   
   // Combine fetched and WebSocket notifications
-  const [allNotifications, setAllNotifications] = useState([]);
+  const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
   
   useEffect(() => {
     // Combine and deduplicate notifications
-    const combined = [...wsNotifications, ...fetchedNotifications];
+    const combined = [...(wsNotifications || []), ...(fetchedNotifications || [])];
     const uniqueNotifications = Array.from(
-      new Map(combined.map(item => [item.id, item])).values()
-    );
+      new Map(combined.map(item => [item?.id, item])).values()
+    ).filter(Boolean) as Notification[];
     
     // Sort by date, newest first
     uniqueNotifications.sort((a, b) => 
@@ -46,14 +56,16 @@ export default function NotificationBell() {
   const unreadCount = allNotifications.filter(n => !n.read).length;
   
   // Handle notification click
-  const handleNotificationClick = (notification) => {
+  const handleNotificationClick = (notification: Notification) => {
     if (!notification.read) {
       markNotificationAsRead(notification.id);
     }
   };
   
   // Format notification time
-  const formatNotificationTime = (date) => {
+  const formatNotificationTime = (date: string) => {
+    if (!date) return "";
+    
     const notificationDate = new Date(date);
     const now = new Date();
     const diffInHours = (now.getTime() - notificationDate.getTime()) / (1000 * 60 * 60);

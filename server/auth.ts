@@ -8,9 +8,23 @@ import { storage } from "./storage";
 import { User } from "@shared/schema";
 import { z } from "zod";
 
+// Define a type for user with password that includes what we need
+type UserWithPassword = {
+  id: number;
+  username: string;
+  email: string;
+  password: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  role: string;
+  createdAt: Date;
+  updatedAt?: Date;
+};
+
 declare global {
   namespace Express {
-    interface User extends User {}
+    // Extend the Express User interface
+    interface User extends UserWithPassword {}
   }
 }
 
@@ -126,7 +140,7 @@ export function setupAuth(app: Express) {
       // Validate login data
       loginSchema.parse(req.body);
       
-      passport.authenticate("local", (err, user, info) => {
+      passport.authenticate("local", (err: any, user: UserWithPassword | false, info: any) => {
         if (err) return next(err);
         if (!user) {
           return res.status(401).json({ message: "Invalid username or password" });

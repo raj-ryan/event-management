@@ -8,8 +8,13 @@ import {
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import connectPg from "connect-pg-simple";
+import { db } from "./db";
+import { eq, desc, asc } from "drizzle-orm";
+import { Pool } from "@neondatabase/serverless";
 
 const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
 // Interface for storage operations
 export interface IStorage {
@@ -57,249 +62,236 @@ export interface IStorage {
   markNotificationAsRead(id: number): Promise<Notification | undefined>;
   
   // Session store
-  sessionStore: session.SessionStore;
+  sessionStore: any; // Use any for session store to avoid type errors
 }
 
-// In-memory storage implementation
-export class MemStorage implements IStorage {
-  private userStore: Map<number, User>;
-  private eventStore: Map<number, Event>;
-  private venueStore: Map<number, Venue>;
-  private bookingStore: Map<number, Booking>;
-  private paymentStore: Map<number, Payment>;
-  private notificationStore: Map<number, Notification>;
-  
-  userId: number;
-  eventId: number;
-  venueId: number;
-  bookingId: number;
-  paymentId: number;
-  notificationId: number;
-  sessionStore: session.SessionStore;
+// Database storage implementation
+export class DatabaseStorage implements IStorage {
+  sessionStore: any; // Use any for session store to avoid type errors
 
   constructor() {
-    this.userStore = new Map();
-    this.eventStore = new Map();
-    this.venueStore = new Map();
-    this.bookingStore = new Map();
-    this.paymentStore = new Map();
-    this.notificationStore = new Map();
+    const pgPool = new Pool({ connectionString: process.env.DATABASE_URL });
     
-    this.userId = 1;
-    this.eventId = 1;
-    this.venueId = 1;
-    this.bookingId = 1;
-    this.paymentId = 1;
-    this.notificationId = 1;
-    
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000 // prune expired entries every 24h
+    this.sessionStore = new PostgresSessionStore({
+      pool: pgPool,
+      createTableIfMissing: true
     });
   }
 
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    return this.userStore.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.userStore.values()).find(
-      (user) => user.username === username
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
   
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.userStore.values()).find(
-      (user) => user.email === email
-    );
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
   }
 
   async createUser(userData: InsertUser): Promise<User> {
-    const id = this.userId++;
-    const createdAt = new Date();
-    const user: User = { ...userData, id, role: "user", createdAt };
-    this.userStore.set(id, user);
+    const [user] = await db.insert(users).values(userData).returning();
     return user;
   }
   
   // Event operations
   async getEvent(id: number): Promise<Event | undefined> {
-    return this.eventStore.get(id);
+    const [event] = await db.select().from(events).where(eq(events.id, id));
+    return event;
   }
   
   async getEvents(limit: number = 10, offset: number = 0): Promise<Event[]> {
-    return Array.from(this.eventStore.values())
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(offset, offset + limit);
+    return await db.select().from(events).orderBy(desc(events.date)).limit(limit).offset(offset);
   }
   
   async getEventsByCategory(category: string, limit: number = 10, offset: number = 0): Promise<Event[]> {
-    return Array.from(this.eventStore.values())
-      .filter(event => event.category === category)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(offset, offset + limit);
+    return await db
+      .select()
+      .from(events)
+      .where(eq(events.category, category))
+      .orderBy(desc(events.date))
+      .limit(limit)
+      .offset(offset);
   }
   
   async getEventsByVenue(venueId: number): Promise<Event[]> {
-    return Array.from(this.eventStore.values())
-      .filter(event => event.venueId === venueId)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return await db
+      .select()
+      .from(events)
+      .where(eq(events.venueId, venueId))
+      .orderBy(desc(events.date));
   }
   
   async getEventsByUser(userId: number): Promise<Event[]> {
-    return Array.from(this.eventStore.values())
-      .filter(event => event.createdBy === userId)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return await db
+      .select()
+      .from(events)
+      .where(eq(events.createdBy, userId))
+      .orderBy(desc(events.date));
   }
   
   async createEvent(eventData: InsertEvent): Promise<Event> {
-    const id = this.eventId++;
-    const createdAt = new Date();
-    const event: Event = { ...eventData, id, createdAt };
-    this.eventStore.set(id, event);
+    const [event] = await db.insert(events).values(eventData).returning();
     return event;
   }
   
   async updateEvent(id: number, eventData: Partial<InsertEvent>): Promise<Event | undefined> {
-    const existingEvent = this.eventStore.get(id);
-    if (!existingEvent) return undefined;
+    const [updatedEvent] = await db
+      .update(events)
+      .set(eventData)
+      .where(eq(events.id, id))
+      .returning();
     
-    const updatedEvent: Event = { ...existingEvent, ...eventData };
-    this.eventStore.set(id, updatedEvent);
     return updatedEvent;
   }
   
   async deleteEvent(id: number): Promise<boolean> {
-    return this.eventStore.delete(id);
+    const result = await db.delete(events).where(eq(events.id, id));
+    return result !== null;
   }
   
   // Venue operations
   async getVenue(id: number): Promise<Venue | undefined> {
-    return this.venueStore.get(id);
+    const [venue] = await db.select().from(venues).where(eq(venues.id, id));
+    return venue;
   }
   
   async getVenues(limit: number = 10, offset: number = 0): Promise<Venue[]> {
-    return Array.from(this.venueStore.values())
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .slice(offset, offset + limit);
+    return await db
+      .select()
+      .from(venues)
+      .orderBy(asc(venues.name))
+      .limit(limit)
+      .offset(offset);
   }
   
   async createVenue(venueData: InsertVenue): Promise<Venue> {
-    const id = this.venueId++;
-    const createdAt = new Date();
-    const venue: Venue = { ...venueData, id, createdAt };
-    this.venueStore.set(id, venue);
+    const [venue] = await db.insert(venues).values(venueData).returning();
     return venue;
   }
   
   async updateVenue(id: number, venueData: Partial<InsertVenue>): Promise<Venue | undefined> {
-    const existingVenue = this.venueStore.get(id);
-    if (!existingVenue) return undefined;
+    const [updatedVenue] = await db
+      .update(venues)
+      .set(venueData)
+      .where(eq(venues.id, id))
+      .returning();
     
-    const updatedVenue: Venue = { ...existingVenue, ...venueData };
-    this.venueStore.set(id, updatedVenue);
     return updatedVenue;
   }
   
   async deleteVenue(id: number): Promise<boolean> {
-    return this.venueStore.delete(id);
+    const result = await db.delete(venues).where(eq(venues.id, id));
+    return result !== null;
   }
   
   // Booking operations
   async getBooking(id: number): Promise<Booking | undefined> {
-    return this.bookingStore.get(id);
+    const [booking] = await db.select().from(bookings).where(eq(bookings.id, id));
+    return booking;
   }
   
   async getBookingsByUser(userId: number): Promise<Booking[]> {
-    return Array.from(this.bookingStore.values())
-      .filter(booking => booking.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return await db
+      .select()
+      .from(bookings)
+      .where(eq(bookings.userId, userId))
+      .orderBy(desc(bookings.createdAt));
   }
   
   async getBookingsByEvent(eventId: number): Promise<Booking[]> {
-    return Array.from(this.bookingStore.values())
-      .filter(booking => booking.eventId === eventId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return await db
+      .select()
+      .from(bookings)
+      .where(eq(bookings.eventId, eventId))
+      .orderBy(desc(bookings.createdAt));
   }
   
   async createBooking(bookingData: InsertBooking): Promise<Booking> {
-    const id = this.bookingId++;
-    const createdAt = new Date();
-    const booking: Booking = { ...bookingData, id, createdAt };
-    this.bookingStore.set(id, booking);
+    const [booking] = await db.insert(bookings).values(bookingData).returning();
     return booking;
   }
   
   async updateBooking(id: number, bookingData: Partial<InsertBooking>): Promise<Booking | undefined> {
-    const existingBooking = this.bookingStore.get(id);
-    if (!existingBooking) return undefined;
+    const [updatedBooking] = await db
+      .update(bookings)
+      .set(bookingData)
+      .where(eq(bookings.id, id))
+      .returning();
     
-    const updatedBooking: Booking = { ...existingBooking, ...bookingData };
-    this.bookingStore.set(id, updatedBooking);
     return updatedBooking;
   }
   
   async deleteBooking(id: number): Promise<boolean> {
-    return this.bookingStore.delete(id);
+    const result = await db.delete(bookings).where(eq(bookings.id, id));
+    return result !== null;
   }
   
   // Payment operations
   async getPayment(id: number): Promise<Payment | undefined> {
-    return this.paymentStore.get(id);
+    const [payment] = await db.select().from(payments).where(eq(payments.id, id));
+    return payment;
   }
   
   async getPaymentsByUser(userId: number): Promise<Payment[]> {
-    return Array.from(this.paymentStore.values())
-      .filter(payment => payment.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return await db
+      .select()
+      .from(payments)
+      .where(eq(payments.userId, userId))
+      .orderBy(desc(payments.createdAt));
   }
   
   async getPaymentsByBooking(bookingId: number): Promise<Payment[]> {
-    return Array.from(this.paymentStore.values())
-      .filter(payment => payment.bookingId === bookingId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return await db
+      .select()
+      .from(payments)
+      .where(eq(payments.bookingId, bookingId))
+      .orderBy(desc(payments.createdAt));
   }
   
   async createPayment(paymentData: InsertPayment): Promise<Payment> {
-    const id = this.paymentId++;
-    const createdAt = new Date();
-    const payment: Payment = { ...paymentData, id, createdAt };
-    this.paymentStore.set(id, payment);
+    const [payment] = await db.insert(payments).values(paymentData).returning();
     return payment;
   }
   
   async updatePayment(id: number, paymentData: Partial<InsertPayment>): Promise<Payment | undefined> {
-    const existingPayment = this.paymentStore.get(id);
-    if (!existingPayment) return undefined;
+    const [updatedPayment] = await db
+      .update(payments)
+      .set(paymentData)
+      .where(eq(payments.id, id))
+      .returning();
     
-    const updatedPayment: Payment = { ...existingPayment, ...paymentData };
-    this.paymentStore.set(id, updatedPayment);
     return updatedPayment;
   }
   
   // Notification operations
   async getNotificationsByUser(userId: number): Promise<Notification[]> {
-    return Array.from(this.notificationStore.values())
-      .filter(notification => notification.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt));
   }
   
   async createNotification(notificationData: InsertNotification): Promise<Notification> {
-    const id = this.notificationId++;
-    const createdAt = new Date();
-    const notification: Notification = { ...notificationData, id, createdAt };
-    this.notificationStore.set(id, notification);
+    const [notification] = await db.insert(notifications).values(notificationData).returning();
     return notification;
   }
   
   async markNotificationAsRead(id: number): Promise<Notification | undefined> {
-    const existingNotification = this.notificationStore.get(id);
-    if (!existingNotification) return undefined;
+    const [updatedNotification] = await db
+      .update(notifications)
+      .set({ read: true })
+      .where(eq(notifications.id, id))
+      .returning();
     
-    const updatedNotification: Notification = { ...existingNotification, read: true };
-    this.notificationStore.set(id, updatedNotification);
     return updatedNotification;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
