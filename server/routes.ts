@@ -166,6 +166,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.put("/api/venues/:id", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    // Only admins can update venues
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    
+    try {
+      const venueId = parseInt(req.params.id);
+      const venue = await storage.getVenue(venueId);
+      
+      if (!venue) {
+        return res.status(404).json({ message: "Venue not found" });
+      }
+      
+      const updatedVenue = await storage.updateVenue(venueId, req.body);
+      res.json(updatedVenue);
+    } catch (error) {
+      res.status(500).json({ message: "Error updating venue" });
+    }
+  });
+  
+  app.delete("/api/venues/:id", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    // Only admins can delete venues
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    
+    try {
+      const venueId = parseInt(req.params.id);
+      const venue = await storage.getVenue(venueId);
+      
+      if (!venue) {
+        return res.status(404).json({ message: "Venue not found" });
+      }
+      
+      // Check if venue has associated events
+      const events = await storage.getEventsByVenue(venueId);
+      if (events.length > 0) {
+        return res.status(400).json({ 
+          message: "Cannot delete venue with associated events. Remove all events first." 
+        });
+      }
+      
+      await storage.deleteVenue(venueId);
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Error deleting venue" });
+    }
+  });
+  
   // Booking routes
   app.get("/api/bookings", async (req, res) => {
     if (!req.isAuthenticated()) {
