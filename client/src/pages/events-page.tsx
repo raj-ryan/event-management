@@ -8,7 +8,7 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import { CalendarRange, Users, MapPin, Plus, Edit2, Trash2, Calendar, Eye, Ticket } from "lucide-react";
+import { CalendarRange, Users, MapPin, Plus, Edit2, Trash2, Calendar, Eye, Ticket, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -24,74 +24,21 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
+import { apiRequest } from "@/lib/queryClient";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Event, Venue } from "@shared/schema";
+import { format, parseISO } from "date-fns";
 
-// Mock event data
-const mockEvents = [
-  {
-    id: 1,
-    name: "Annual Tech Conference",
-    description: "The largest tech conference in the city, featuring speakers from leading tech companies.",
-    date: "2025-04-15",
-    time: "09:00 AM - 06:00 PM",
-    location: "Convention Center",
-    venueId: 1,
-    imageUrl: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=2070&auto=format&fit=crop",
-    status: "upcoming",
-    capacity: 500,
-    registeredAttendees: 324,
-    price: 99,
-    organizer: "TechEvents Inc",
-    category: "Technology"
-  },
-  {
-    id: 2,
-    name: "Summer Wedding Showcase",
-    description: "Explore the latest trends in wedding planning, decorations, and catering.",
-    date: "2025-05-20",
-    time: "10:00 AM - 04:00 PM",
-    location: "Grand Ballroom",
-    venueId: 2,
-    imageUrl: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=2069&auto=format&fit=crop",
-    status: "upcoming",
-    capacity: 200,
-    registeredAttendees: 108,
-    price: 25,
-    organizer: "Wedding Planners Association",
-    category: "Wedding"
-  },
-  {
-    id: 3,
-    name: "Garden Concert Series",
-    description: "An evening of classical music in the beautiful botanical gardens.",
-    date: "2025-06-10",
-    time: "07:00 PM - 10:00 PM",
-    location: "Botanical Gardens",
-    venueId: 3,
-    imageUrl: "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=2070&auto=format&fit=crop",
-    status: "upcoming",
-    capacity: 300,
-    registeredAttendees: 187,
-    price: 45,
-    organizer: "City Symphony Orchestra",
-    category: "Music"
-  },
-  {
-    id: 4,
-    name: "Charity Fundraiser Gala",
-    description: "Annual black-tie fundraiser for local community initiatives.",
-    date: "2025-07-05",
-    time: "06:30 PM - 11:00 PM",
-    location: "Luxury Hotel Ballroom",
-    venueId: 4,
-    imageUrl: "https://images.unsplash.com/photo-1519751138087-5bf79df62d5b?q=80&w=2070&auto=format&fit=crop",
-    status: "upcoming",
-    capacity: 250,
-    registeredAttendees: 142,
-    price: 150,
-    organizer: "Community Foundation",
-    category: "Charity"
-  }
-];
+// Extended interface for event with venue information and additional display properties
+interface EventWithVenue extends Event {
+  venue?: Venue;
+  // Additional display properties not in schema
+  imageUrl?: string;
+  time?: string;
+  location?: string;
+  organizer?: string;
+  registeredAttendees?: number;
+}
 
 export default function EventsPage() {
   const [_, navigate] = useLocation();
@@ -99,7 +46,50 @@ export default function EventsPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<number | null>(null);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
+  // Fetch events from API
+  const { 
+    data: events = [], 
+    isLoading, 
+    error 
+  } = useQuery<EventWithVenue[]>({
+    queryKey: ["/api/events"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/events");
+      if (!res.ok) {
+        throw new Error("Failed to fetch events");
+      }
+      return res.json();
+    }
+  });
+
+  // Delete event mutation
+  const deleteEventMutation = useMutation({
+    mutationFn: async (eventId: number) => {
+      const res = await apiRequest("DELETE", `/api/events/${eventId}`);
+      if (!res.ok) {
+        throw new Error("Failed to delete event");
+      }
+      return eventId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      toast({
+        title: "Event Deleted",
+        description: "The event has been successfully removed",
+      });
+      setEventToDelete(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete event",
+        variant: "destructive",
+      });
+    }
+  });
+  
   // Check for admin role
   useEffect(() => {
     const storedRole = localStorage.getItem("userRole");
@@ -112,18 +102,36 @@ export default function EventsPage() {
 
   // Function to handle event deletion
   const handleDeleteEvent = (id: number) => {
-    // In a real application, this would make an API call
-    toast({
-      title: "Event Deleted",
-      description: "The event has been successfully removed",
-    });
-    setEventToDelete(null);
+    deleteEventMutation.mutate(id);
   };
   
   // Filter events based on active tab
   const getFilteredEvents = () => {
-    if (activeTab === "all") return mockEvents;
-    return mockEvents.filter(event => event.category.toLowerCase() === activeTab);
+    if (activeTab === "all") return events;
+    return events.filter(event => event.category?.toLowerCase() === activeTab);
+  };
+  
+  // Format event date
+  const formatEventDate = (date: string | Date) => {
+    if (!date) return "No date";
+    const eventDate = typeof date === "string" ? parseISO(date) : date;
+    return format(eventDate, "PPP");
+  };
+  
+  // Get default image for events without images
+  const getDefaultImage = (category?: string) => {
+    switch (category?.toLowerCase()) {
+      case "technology":
+        return "https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=2070&auto=format&fit=crop";
+      case "wedding":
+        return "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=2069&auto=format&fit=crop";
+      case "music":
+        return "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=2070&auto=format&fit=crop";
+      case "charity":
+        return "https://images.unsplash.com/photo-1519751138087-5bf79df62d5b?q=80&w=2070&auto=format&fit=crop";
+      default:
+        return "https://images.unsplash.com/photo-1523580494863-6f3031224c94?q=80&w=2070&auto=format&fit=crop";
+    }
   };
 
   return (
@@ -157,110 +165,133 @@ export default function EventsPage() {
           </TabsList>
           
           <TabsContent value={activeTab} className="mt-6">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {getFilteredEvents().map((event) => (
-                <Card key={event.id} className="overflow-hidden">
-                  {event.imageUrl && (
+            {isLoading ? (
+              <div className="flex justify-center items-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : error ? (
+              <div className="text-center p-10 border rounded-lg">
+                <p className="text-red-500 mb-4">Error loading events</p>
+                <Button onClick={() => window.location.reload()}>
+                  Try Again
+                </Button>
+              </div>
+            ) : getFilteredEvents().length === 0 ? (
+              <div className="text-center p-10 border rounded-lg">
+                <p className="text-muted-foreground mb-4">No events found in this category</p>
+                <Button onClick={() => setActiveTab("all")}>
+                  View All Events
+                </Button>
+              </div>
+            ) : (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {getFilteredEvents().map((event) => (
+                  <Card key={event.id} className="overflow-hidden">
                     <div className="h-48 overflow-hidden">
                       <img
-                        src={event.imageUrl}
+                        src={event.imageUrl || getDefaultImage(event.category)}
                         alt={event.name}
                         className="w-full h-full object-cover"
                       />
                     </div>
-                  )}
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="mb-1">{event.name}</CardTitle>
-                        <CardDescription>{event.organizer}</CardDescription>
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="mb-1">{event.name}</CardTitle>
+                          <CardDescription>{event.organizer || "Unknown organizer"}</CardDescription>
+                        </div>
+                        <Badge className="bg-primary hover:bg-primary/90 text-white">
+                          {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+                        </Badge>
                       </div>
-                      <Badge className="bg-primary hover:bg-primary/90 text-white">
-                        {event.status === "upcoming" ? "Upcoming" : event.status}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pb-2">
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span>{event.date} • {event.time}</span>
+                    </CardHeader>
+                    <CardContent className="pb-2">
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span>{formatEventDate(event.date)} • {event.time || "All day"}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                          <span>{event.location || "No location specified"}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                          <span>{event.registeredAttendees || 0} / {event.capacity || "∞"} attendees</span>
+                        </div>
+                        <div className="mt-2">
+                          <p className="font-semibold">${event.price.toFixed(2)}</p>
+                          <p className="text-muted-foreground line-clamp-2 mt-1">{event.description}</p>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span>{event.location}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        <span>{event.registeredAttendees} / {event.capacity} attendees</span>
-                      </div>
-                      <div className="mt-2">
-                        <p className="font-semibold">${event.price}</p>
-                        <p className="text-muted-foreground line-clamp-2 mt-1">{event.description}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="flex justify-between">
-                    <Button variant="outline" onClick={() => navigate(`/events/${event.id}`)}>
-                      <Eye className="h-4 w-4 mr-2" />
-                      Details
-                    </Button>
-                    
-                    {isAdmin ? (
-                      <div className="space-x-2">
-                        <Button 
-                          variant="outline" 
-                          size="icon"
-                          onClick={() => navigate(`/events/edit/${event.id}`)}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button 
-                              variant="outline" 
-                              size="icon"
-                              onClick={() => setEventToDelete(event.id)}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete {event.name}? This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel onClick={() => setEventToDelete(null)}>
-                                Cancel
-                              </AlertDialogCancel>
-                              <AlertDialogAction 
-                                onClick={() => handleDeleteEvent(event.id)}
-                                className="bg-red-500 hover:bg-red-600"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    ) : (
-                      <Button 
-                        variant="default"
-                        onClick={() => navigate(`/events/${event.id}`)}
-                        disabled={event.status !== "upcoming" || event.registeredAttendees >= event.capacity}
-                      >
-                        <Ticket className="h-4 w-4 mr-2" />
-                        Book Now
+                    </CardContent>
+                    <CardFooter className="flex justify-between">
+                      <Button variant="outline" onClick={() => navigate(`/events/${event.id}`)}>
+                        <Eye className="h-4 w-4 mr-2" />
+                        Details
                       </Button>
-                    )}
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
+                      
+                      {isAdmin ? (
+                        <div className="space-x-2">
+                          <Button 
+                            variant="outline" 
+                            size="icon"
+                            onClick={() => navigate(`/events/edit/${event.id}`)}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button 
+                                variant="outline" 
+                                size="icon"
+                                onClick={() => setEventToDelete(event.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete {event.name}? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel onClick={() => setEventToDelete(null)}>
+                                  Cancel
+                                </AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => handleDeleteEvent(event.id)}
+                                  className="bg-red-500 hover:bg-red-600"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      ) : (
+                        <Button 
+                          variant="default"
+                          onClick={() => navigate(`/events/${event.id}`)}
+                          disabled={
+                            event.status !== "upcoming" || 
+                            (typeof event.capacity === "number" && 
+                             typeof event.registeredAttendees === "number" && 
+                             event.registeredAttendees >= event.capacity)
+                          }
+                        >
+                          <Ticket className="h-4 w-4 mr-2" />
+                          Book Now
+                        </Button>
+                      )}
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>

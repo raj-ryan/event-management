@@ -400,8 +400,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // }
     
     try {
-      // If user is authenticated, use their ID, otherwise use a default ID of 1
+      // If user is authenticated, use their ID, otherwise use the default demo user ID 
       const userId = req.isAuthenticated() ? req.user.id : DEFAULT_DEMO_USER_ID;
+      console.log(`Creating venue booking with user ID: ${userId}`);
+      
+      // Verify the user exists
+      const user = await storage.getUser(userId);
+      if (!user) {
+        console.error(`User with ID ${userId} not found`);
+        return res.status(400).json({ message: "User not found" });
+      }
+      
       const { venueId, bookingDate, bookingDuration, attendeeCount } = req.body;
       
       // Fetch venue to calculate total amount
@@ -454,8 +463,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // }
     
     try {
-      // If user is authenticated, use their ID, otherwise use a default ID of 1
+      // If user is authenticated, use their ID, otherwise use the default demo user ID
       const userId = req.isAuthenticated() ? req.user.id : DEFAULT_DEMO_USER_ID;
+      console.log(`Creating event booking with user ID: ${userId}`);
+      
+      // Verify the user exists
+      const user = await storage.getUser(userId);
+      if (!user) {
+        console.error(`User with ID ${userId} not found`);
+        return res.status(400).json({ message: "User not found" });
+      }
+      
       const bookingData = { ...req.body, userId };
       
       // Fetch event to calculate total amount
