@@ -44,8 +44,13 @@ export default function VenueList() {
   
   // Check for admin status
   useEffect(() => {
-    // For development purposes, always show admin controls
-    setIsAdmin(true);
+    // Read from localStorage
+    const storedRole = localStorage.getItem("userRole");
+    if (storedRole === "admin") {
+      setIsAdmin(true);
+    } else {
+      setIsAdmin(false);
+    }
     
     // In a real app, we would uncomment this to use the auth context
     // if (auth.user?.role === "admin") {

@@ -1,6 +1,5 @@
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 import VenueList from "./venues/venue-list";
 import { useState, useEffect } from "react";
 
@@ -8,15 +7,12 @@ export default function VenuesPage() {
   const [_, navigate] = useLocation();
   const [isAdmin, setIsAdmin] = useState(false);
   
-  // Check for admin status
+  // Check for admin status - not needed here as we show only in venue-list.tsx
   useEffect(() => {
-    // For development purposes, always show admin controls
-    setIsAdmin(true);
-    
-    // In a real app, we would uncomment this to use the auth context
-    // if (auth.user?.role === "admin") {
-    //   setIsAdmin(true);
-    // }
+    const storedRole = localStorage.getItem("userRole");
+    if (storedRole === "admin") {
+      setIsAdmin(true);
+    }
   }, []);
 
   return (
@@ -30,15 +26,6 @@ export default function VenuesPage() {
             </p>
           </div>
           <div className="space-x-2 flex">
-            {isAdmin && (
-              <Button 
-                onClick={() => navigate("/venues/new")}
-                className="mr-2"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add New Venue
-              </Button>
-            )}
             <Button variant="outline" onClick={() => navigate("/")}>Back to Home</Button>
             <Button onClick={() => navigate("/dashboard")}>Dashboard</Button>
           </div>

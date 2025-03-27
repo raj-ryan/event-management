@@ -12,16 +12,32 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [isAdmin, setIsAdmin] = useState(false);
   
-  // Check if user came from admin login
+  // Check for user role from user data
   useEffect(() => {
-    // For development purposes, always show admin features
-    setIsAdmin(true);
-    
-    // In a real app, this would read from the auth context or localStorage
-    // const urlParams = new URLSearchParams(window.location.search);
-    // if (urlParams.get("admin") === "true") {
+    // In a real app, we would check auth context
+    // if (auth.user?.role === "admin") {
     //   setIsAdmin(true);
     // }
+    
+    // For development, read from URL or localStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    if (urlParams.get("role") === "admin") {
+      setIsAdmin(true);
+      // Store in localStorage for persistence
+      localStorage.setItem("userRole", "admin");
+    } else if (urlParams.get("role") === "user") {
+      setIsAdmin(false);
+      localStorage.setItem("userRole", "user");
+    } else {
+      // Read from storage if not in URL
+      const storedRole = localStorage.getItem("userRole");
+      if (storedRole === "admin") {
+        setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
+      }
+    }
   }, []);
 
   // Simulated user data
@@ -117,6 +133,7 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => { setActiveTab("overview"); }}>Overview</Button>
             <Button variant="outline" onClick={() => navigate("/")}>Back to Home</Button>
             <Button variant="destructive" size="sm" onClick={handleLogout}>Logout</Button>
           </div>
@@ -511,15 +528,48 @@ export default function DashboardPage() {
                         <ul className="space-y-2">
                           <li className="flex justify-between items-center">
                             <span>John Doe - Annual Tech Conference</span>
-                            <Button variant="outline" size="sm">Check In</Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                toast({
+                                  title: "Attendee Checked In",
+                                  description: "John Doe has been checked in successfully",
+                                });
+                              }}
+                            >
+                              Check In
+                            </Button>
                           </li>
                           <li className="flex justify-between items-center">
                             <span>Sarah Doe - Annual Tech Conference</span>
-                            <Button variant="outline" size="sm">Check In</Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                toast({
+                                  title: "Attendee Checked In",
+                                  description: "Sarah Doe has been checked in successfully",
+                                });
+                              }}
+                            >
+                              Check In
+                            </Button>
                           </li>
                           <li className="flex justify-between items-center">
                             <span>Jane Smith - Summer Wedding Showcase</span>
-                            <Button variant="outline" size="sm">Check In</Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                toast({
+                                  title: "Attendee Checked In",
+                                  description: "Jane Smith has been checked in successfully",
+                                });
+                              }}
+                            >
+                              Check In
+                            </Button>
                           </li>
                         </ul>
                       </div>
@@ -553,7 +603,18 @@ export default function DashboardPage() {
                             <td className="p-2">Annual Tech Conference</td>
                             <td className="p-2"><span className="bg-amber-100 text-amber-800 px-2 py-1 rounded-full text-xs">Pending</span></td>
                             <td className="p-2">
-                              <Button variant="outline" size="sm">Check In</Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => {
+                                  toast({
+                                    title: "Attendee Checked In",
+                                    description: "John Doe has been checked in successfully",
+                                  });
+                                }}
+                              >
+                                Check In
+                              </Button>
                             </td>
                           </tr>
                           <tr className="border-t">
@@ -562,7 +623,18 @@ export default function DashboardPage() {
                             <td className="p-2">Annual Tech Conference</td>
                             <td className="p-2"><span className="bg-amber-100 text-amber-800 px-2 py-1 rounded-full text-xs">Pending</span></td>
                             <td className="p-2">
-                              <Button variant="outline" size="sm">Check In</Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => {
+                                  toast({
+                                    title: "Attendee Checked In",
+                                    description: "Sarah Doe has been checked in successfully",
+                                  });
+                                }}
+                              >
+                                Check In
+                              </Button>
                             </td>
                           </tr>
                           <tr className="border-t">
@@ -571,7 +643,18 @@ export default function DashboardPage() {
                             <td className="p-2">Summer Wedding Showcase</td>
                             <td className="p-2"><span className="bg-amber-100 text-amber-800 px-2 py-1 rounded-full text-xs">Pending</span></td>
                             <td className="p-2">
-                              <Button variant="outline" size="sm">Check In</Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => {
+                                  toast({
+                                    title: "Attendee Checked In",
+                                    description: "Jane Smith has been checked in successfully",
+                                  });
+                                }}
+                              >
+                                Check In
+                              </Button>
                             </td>
                           </tr>
                         </tbody>
@@ -613,8 +696,31 @@ export default function DashboardPage() {
                           </ul>
                         </div>
                         <div className="flex justify-end mt-4 space-x-2">
-                          <Button variant="outline" size="sm">Edit</Button>
-                          <Button variant="destructive" size="sm">Remove</Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              toast({
+                                title: "Edit Vendor",
+                                description: "Edit Elite Catering details",
+                              });
+                            }}
+                          >
+                            Edit
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            onClick={() => {
+                              toast({
+                                title: "Vendor Removed",
+                                description: "Elite Catering has been removed successfully",
+                                variant: "destructive",
+                              });
+                            }}
+                          >
+                            Remove
+                          </Button>
                         </div>
                       </div>
                     </Card>
@@ -633,8 +739,31 @@ export default function DashboardPage() {
                           </ul>
                         </div>
                         <div className="flex justify-end mt-4 space-x-2">
-                          <Button variant="outline" size="sm">Edit</Button>
-                          <Button variant="destructive" size="sm">Remove</Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              toast({
+                                title: "Edit Vendor",
+                                description: "Edit Sound Masters details",
+                              });
+                            }}
+                          >
+                            Edit
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            onClick={() => {
+                              toast({
+                                title: "Vendor Removed",
+                                description: "Sound Masters has been removed successfully",
+                                variant: "destructive",
+                              });
+                            }}
+                          >
+                            Remove
+                          </Button>
                         </div>
                       </div>
                     </Card>
@@ -652,8 +781,31 @@ export default function DashboardPage() {
                           </ul>
                         </div>
                         <div className="flex justify-end mt-4 space-x-2">
-                          <Button variant="outline" size="sm">Edit</Button>
-                          <Button variant="destructive" size="sm">Remove</Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              toast({
+                                title: "Edit Vendor",
+                                description: "Edit Perfect Decor details",
+                              });
+                            }}
+                          >
+                            Edit
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            onClick={() => {
+                              toast({
+                                title: "Vendor Removed",
+                                description: "Perfect Decor has been removed successfully",
+                                variant: "destructive",
+                              });
+                            }}
+                          >
+                            Remove
+                          </Button>
                         </div>
                       </div>
                     </Card>
@@ -672,8 +824,31 @@ export default function DashboardPage() {
                           </ul>
                         </div>
                         <div className="flex justify-end mt-4 space-x-2">
-                          <Button variant="outline" size="sm">Edit</Button>
-                          <Button variant="destructive" size="sm">Remove</Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              toast({
+                                title: "Edit Vendor",
+                                description: "Edit Photo Memories details",
+                              });
+                            }}
+                          >
+                            Edit
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            onClick={() => {
+                              toast({
+                                title: "Vendor Removed",
+                                description: "Photo Memories has been removed successfully",
+                                variant: "destructive",
+                              });
+                            }}
+                          >
+                            Remove
+                          </Button>
                         </div>
                       </div>
                     </Card>
