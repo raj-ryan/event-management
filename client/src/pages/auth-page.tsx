@@ -82,7 +82,7 @@ export default function AuthPage() {
             description: "Welcome to the admin dashboard!",
           });
           setIsSubmitting(false);
-          navigate("/dashboard");
+          navigate("/dashboard?admin=true");
         }, 1500);
       } else {
         // Admin login failed
