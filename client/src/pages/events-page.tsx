@@ -8,7 +8,7 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import { CalendarRange, Users, MapPin, Plus, Edit2, Trash2, Calendar, Eye } from "lucide-react";
+import { CalendarRange, Users, MapPin, Plus, Edit2, Trash2, Calendar, Eye, Ticket } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -205,7 +205,8 @@ export default function EventsPage() {
                       <Eye className="h-4 w-4 mr-2" />
                       Details
                     </Button>
-                    {isAdmin && (
+                    
+                    {isAdmin ? (
                       <div className="space-x-2">
                         <Button 
                           variant="outline" 
@@ -246,6 +247,15 @@ export default function EventsPage() {
                           </AlertDialogContent>
                         </AlertDialog>
                       </div>
+                    ) : (
+                      <Button 
+                        variant="default"
+                        onClick={() => navigate(`/events/${event.id}`)}
+                        disabled={event.status !== "upcoming" || event.registeredAttendees >= event.capacity}
+                      >
+                        <Ticket className="h-4 w-4 mr-2" />
+                        Book Now
+                      </Button>
                     )}
                   </CardFooter>
                 </Card>
