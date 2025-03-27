@@ -54,14 +54,8 @@ export default function EventsPage() {
     isLoading, 
     error 
   } = useQuery<EventWithVenue[]>({
-    queryKey: ["/api/events"],
-    queryFn: async () => {
-      const res = await apiRequest("GET", "/api/events");
-      if (!res.ok) {
-        throw new Error("Failed to fetch events");
-      }
-      return res.json();
-    }
+    queryKey: ["/api/events"]
+    // Using the default queryFn from queryClient that handles API URL correctly
   });
 
   // Delete event mutation

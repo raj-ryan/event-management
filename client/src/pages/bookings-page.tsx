@@ -51,11 +51,8 @@ export default function BookingsPage() {
     isLoading, 
     error 
   } = useQuery<BookingWithDetails[]>({
-    queryKey: ["/api/bookings"],
-    queryFn: async () => {
-      const res = await apiRequest("GET", "/api/bookings");
-      return res.json();
-    }
+    queryKey: ["/api/bookings"]
+    // Using the default queryFn from queryClient that handles API URL correctly
   });
   
   // Filter bookings based on active tab

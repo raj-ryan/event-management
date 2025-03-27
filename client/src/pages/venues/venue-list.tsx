@@ -65,11 +65,8 @@ export default function VenueList() {
     error,
     refetch
   } = useQuery<Venue[]>({
-    queryKey: ["/api/venues"],
-    queryFn: async () => {
-      const res = await apiRequest("GET", "/api/venues");
-      return res.json();
-    }
+    queryKey: ["/api/venues"]
+    // Not providing a custom queryFn - using the default fetcher from queryClient
   });
 
   // Handle venue deletion

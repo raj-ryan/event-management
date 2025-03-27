@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { Event, Venue } from "@shared/schema";
 import { 
   ArrowLeft, 
   Calendar,
@@ -76,46 +78,106 @@ export default function EventDetail() {
   const [isBookModalOpen, setIsBookModalOpen] = useState(false);
   
   // Fetch event data
-  const { data: event, isLoading, error } = useQuery<EventDetail>({
-    queryKey: ['/api/events', params?.id],
-    queryFn: async () => {
-      // In a real app, this would fetch from an API
-      // For now, use mock data
-      return {
-        id: parseInt(params!.id),
-        name: "Annual Tech Conference 2025",
-        description: "Join us for the largest tech conference in the city. Experience cutting-edge technology, network with industry leaders, and gain insights into the latest trends and innovations. This year's event includes workshops, panel discussions, and keynote speeches from renowned tech visionaries.",
-        date: new Date("2025-04-15T09:00:00"),
-        endDate: new Date("2025-04-17T18:00:00"),
-        venueId: 1,
-        venue: {
-          id: 1,
-          name: "Metropolitan Convention Center",
-          address: "123 Main Street, Cityville, ST 12345",
-          capacity: 1500,
-          amenities: ["WiFi", "Parking", "Catering", "AV Equipment"]
-        },
-        capacity: 1200,
-        price: 99.99,
-        image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87",
-        status: "upcoming",
-        organizer: {
-          id: 1,
-          name: "Tech Events Inc",
-          avatar: "T"
-        },
-        category: "Technology",
-        attendees: {
-          count: 450,
-          list: [
-            { id: 1, name: "Jane Smith", avatar: "JS" },
-            { id: 2, name: "John Doe", avatar: "JD" },
-            { id: 3, name: "Sarah Johnson", avatar: "SJ" }
-          ]
-        }
-      };
-    },
+  const [eventDetail, setEventDetail] = useState<EventDetail | null>(null);
+  const { data: event, isLoading: eventLoading, error: eventError } = useQuery<Event>({
+    queryKey: ['/api/events', params?.id]
+    // Using the default queryFn from queryClient that handles API URL correctly
   });
+
+  // Fetch venue data if event has a venueId
+  const { data: venue, isLoading: venueLoading, error: venueError } = useQuery<Venue>({
+    queryKey: ['/api/venues', event?.venueId],
+    enabled: !!event?.venueId
+    // Using the default queryFn from queryClient that handles API URL correctly
+  });
+
+  // Combine event and venue data
+  useEffect(() => {
+    if (event && venue) {
+      // Transform the data to match the EventDetail interface
+      setEventDetail({
+        id: event.id,
+        name: event.name,
+        description: event.description || "",
+        date: new Date(event.date),
+        endDate: event.endDate ? new Date(event.endDate) : null,
+        venueId: event.venueId,
+        venue: {
+          id: venue.id,
+          name: venue.name,
+          address: venue.address || "",
+          capacity: venue.capacity,
+          amenities: venue.amenities ? 
+            (Array.isArray(venue.amenities) ? venue.amenities as string[] : []) : 
+            []
+        },
+        capacity: event.capacity || 0,
+        price: event.price,
+        image: event.image || getDefaultEventImage(event.category),
+        status: event.status,
+        organizer: {
+          id: event.userId || 1,
+          name: event.organizer || "Event Organizer",
+          avatar: event.organizer ? event.organizer.charAt(0).toUpperCase() : "O"
+        },
+        category: event.category || "Other",
+        attendees: {
+          count: event.registeredAttendees || 0,
+          list: [] // In a real app, we would fetch attendees separately
+        }
+      });
+    } else if (event) {
+      // If venue data is not available, still show the event with placeholder venue
+      setEventDetail({
+        id: event.id,
+        name: event.name,
+        description: event.description || "",
+        date: new Date(event.date),
+        endDate: event.endDate ? new Date(event.endDate) : null,
+        venueId: event.venueId,
+        venue: {
+          id: event.venueId,
+          name: "Loading venue...",
+          address: "",
+          capacity: 0,
+          amenities: []
+        },
+        capacity: event.capacity || 0,
+        price: event.price,
+        image: event.image || getDefaultEventImage(event.category),
+        status: event.status,
+        organizer: {
+          id: event.userId || 1,
+          name: event.organizer || "Event Organizer",
+          avatar: event.organizer ? event.organizer.charAt(0).toUpperCase() : "O"
+        },
+        category: event.category || "Other",
+        attendees: {
+          count: event.registeredAttendees || 0,
+          list: []
+        }
+      });
+    }
+  }, [event, venue]);
+  
+  // Function to get default image based on category
+  const getDefaultEventImage = (category?: string) => {
+    switch (category?.toLowerCase()) {
+      case "technology":
+        return "https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=2070&auto=format&fit=crop";
+      case "wedding":
+        return "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=2069&auto=format&fit=crop";
+      case "music":
+        return "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=2070&auto=format&fit=crop";
+      case "charity":
+        return "https://images.unsplash.com/photo-1519751138087-5bf79df62d5b?q=80&w=2070&auto=format&fit=crop";
+      default:
+        return "https://images.unsplash.com/photo-1523580494863-6f3031224c94?q=80&w=2070&auto=format&fit=crop";
+    }
+  };
+
+  const isLoading = eventLoading || venueLoading;
+  const error = eventError || venueError;
   
   if (isLoading) {
     return (
@@ -143,12 +205,21 @@ export default function EventDetail() {
       </div>
     );
   }
+  
+  // Wait until eventDetail is populated
+  if (!eventDetail) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   const formatDateRange = () => {
-    const start = format(new Date(event.date), "PPP");
+    const start = format(new Date(eventDetail.date), "PPP");
     
-    if (event.endDate) {
-      const end = format(new Date(event.endDate), "PPP");
+    if (eventDetail.endDate) {
+      const end = format(new Date(eventDetail.endDate), "PPP");
       return `${start} - ${end}`;
     }
     
@@ -156,10 +227,10 @@ export default function EventDetail() {
   };
   
   const formatTimeRange = () => {
-    const start = format(new Date(event.date), "h:mm a");
+    const start = format(new Date(eventDetail.date), "h:mm a");
     
-    if (event.endDate) {
-      const end = format(new Date(event.endDate), "h:mm a");
+    if (eventDetail.endDate) {
+      const end = format(new Date(eventDetail.endDate), "h:mm a");
       return `${start} - ${end}`;
     }
     
@@ -167,7 +238,7 @@ export default function EventDetail() {
   };
   
   const getStatusColor = () => {
-    switch (event.status) {
+    switch (eventDetail.status) {
       case 'upcoming':
         return 'bg-blue-100 text-blue-800';
       case 'ongoing':
@@ -198,8 +269,8 @@ export default function EventDetail() {
           <div className="rounded-xl overflow-hidden mb-6">
             <AspectRatio ratio={16 / 9}>
               <img 
-                src={event.image} 
-                alt={event.name} 
+                src={eventDetail.image} 
+                alt={eventDetail.name} 
                 className="object-cover w-full h-full"
               />
             </AspectRatio>
@@ -208,26 +279,26 @@ export default function EventDetail() {
           {/* Event header */}
           <div className="mb-6">
             <div className="flex items-center justify-between">
-              <h1 className="text-3xl font-bold">{event.name}</h1>
+              <h1 className="text-3xl font-bold">{eventDetail.name}</h1>
               <Badge className={getStatusColor()}>
-                {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+                {eventDetail.status.charAt(0).toUpperCase() + eventDetail.status.slice(1)}
               </Badge>
             </div>
             
             <div className="flex items-center mt-2">
               <Tag className="h-4 w-4 mr-1" />
-              <span className="text-muted-foreground">{event.category}</span>
+              <span className="text-muted-foreground">{eventDetail.category}</span>
             </div>
           </div>
           
           {/* Event organizer */}
           <div className="flex items-center mb-6">
             <Avatar className="h-10 w-10 mr-2">
-              <AvatarFallback>{event.organizer.avatar}</AvatarFallback>
+              <AvatarFallback>{eventDetail.organizer.avatar}</AvatarFallback>
             </Avatar>
             <div>
               <p className="text-sm font-medium">Organized by</p>
-              <p className="font-semibold">{event.organizer.name}</p>
+              <p className="font-semibold">{eventDetail.organizer.name}</p>
             </div>
           </div>
           
@@ -254,8 +325,8 @@ export default function EventDetail() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p>{event.venue.name}</p>
-                <p className="text-muted-foreground">{event.venue.address}</p>
+                <p>{eventDetail.venue.name}</p>
+                <p className="text-muted-foreground">{eventDetail.venue.address}</p>
               </CardContent>
             </Card>
             
@@ -267,9 +338,9 @@ export default function EventDetail() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p>{event.attendees.count} / {event.capacity} attending</p>
+                <p>{eventDetail.attendees.count} / {eventDetail.capacity} attending</p>
                 <p className="text-muted-foreground">
-                  {Math.round((event.attendees.count / event.capacity) * 100)}% filled
+                  {Math.round((eventDetail.attendees.count / eventDetail.capacity) * 100)}% filled
                 </p>
               </CardContent>
             </Card>
@@ -282,9 +353,9 @@ export default function EventDetail() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p>${event.price.toFixed(2)} per ticket</p>
+                <p>${eventDetail.price.toFixed(2)} per ticket</p>
                 <p className="text-muted-foreground">
-                  {event.price === 0 ? 'Free event' : 'Paid event'}
+                  {eventDetail.price === 0 ? 'Free event' : 'Paid event'}
                 </p>
               </CardContent>
             </Card>
@@ -296,7 +367,7 @@ export default function EventDetail() {
               <CardTitle>About this event</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="whitespace-pre-line">{event.description}</p>
+              <p className="whitespace-pre-line">{eventDetail.description}</p>
             </CardContent>
           </Card>
           
@@ -304,14 +375,14 @@ export default function EventDetail() {
           <Card className="mb-8">
             <CardHeader>
               <CardTitle>Venue Information</CardTitle>
-              <CardDescription>{event.venue.name}</CardDescription>
+              <CardDescription>{eventDetail.venue.name}</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="mb-4">{event.venue.address}</p>
+              <p className="mb-4">{eventDetail.venue.address}</p>
               <div className="mb-4">
                 <h4 className="font-medium mb-2">Amenities</h4>
                 <div className="flex flex-wrap gap-2">
-                  {event.venue.amenities.map((amenity, index) => (
+                  {eventDetail.venue.amenities.map((amenity: string, index: number) => (
                     <Badge key={index} variant="outline">
                       {amenity}
                     </Badge>
@@ -320,7 +391,7 @@ export default function EventDetail() {
               </div>
               <div>
                 <h4 className="font-medium mb-2">Capacity</h4>
-                <p>This venue can accommodate up to {event.venue.capacity} people.</p>
+                <p>This venue can accommodate up to {eventDetail.venue.capacity} people.</p>
               </div>
             </CardContent>
           </Card>
@@ -329,11 +400,11 @@ export default function EventDetail() {
           <Card>
             <CardHeader>
               <CardTitle>Attendees</CardTitle>
-              <CardDescription>{event.attendees.count} people are attending</CardDescription>
+              <CardDescription>{eventDetail.attendees.count} people are attending</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
-                {event.attendees.list.map((attendee) => (
+                {eventDetail.attendees.list.map((attendee: any) => (
                   <div key={attendee.id} className="flex items-center">
                     <Avatar className="h-8 w-8 mr-2">
                       <AvatarFallback>{attendee.avatar}</AvatarFallback>
@@ -341,9 +412,9 @@ export default function EventDetail() {
                     <span>{attendee.name}</span>
                   </div>
                 ))}
-                {event.attendees.count > event.attendees.list.length && (
+                {eventDetail.attendees.count > eventDetail.attendees.list.length && (
                   <div className="text-muted-foreground ml-2">
-                    +{event.attendees.count - event.attendees.list.length} more
+                    +{eventDetail.attendees.count - eventDetail.attendees.list.length} more
                   </div>
                 )}
               </div>
@@ -364,19 +435,19 @@ export default function EventDetail() {
                   <div className="flex justify-between">
                     <span>Price:</span>
                     <span className="font-bold">
-                      {event.price === 0 ? 'Free' : `$${event.price.toFixed(2)}`}
+                      {eventDetail.price === 0 ? 'Free' : `$${eventDetail.price.toFixed(2)}`}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Available spots:</span>
                     <span className="font-bold">
-                      {event.capacity - event.attendees.count}
+                      {eventDetail.capacity - eventDetail.attendees.count}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Event date:</span>
                     <span className="font-bold">
-                      {format(new Date(event.date), "MMM d, yyyy")}
+                      {format(new Date(eventDetail.date), "MMM d, yyyy")}
                     </span>
                   </div>
                   
@@ -387,7 +458,7 @@ export default function EventDetail() {
                       size="lg" 
                       className="w-full"
                       onClick={() => setIsBookModalOpen(true)}
-                      disabled={event.status === 'cancelled' || event.status === 'completed'}
+                      disabled={eventDetail.status === 'cancelled' || eventDetail.status === 'completed'}
                     >
                       Book Now
                     </Button>
@@ -401,11 +472,11 @@ export default function EventDetail() {
               </CardContent>
               <CardFooter className="text-sm text-muted-foreground">
                 <p>
-                  {event.status === 'upcoming' 
+                  {eventDetail.status === 'upcoming' 
                     ? `Booking closes 24 hours before the event`
-                    : event.status === 'cancelled' 
+                    : eventDetail.status === 'cancelled' 
                       ? 'This event has been cancelled'
-                      : event.status === 'completed'
+                      : eventDetail.status === 'completed'
                         ? 'This event has ended'
                         : 'Book now while spots are available!'}
                 </p>
@@ -419,7 +490,7 @@ export default function EventDetail() {
       <BookEventModal 
         isOpen={isBookModalOpen}
         onClose={() => setIsBookModalOpen(false)}
-        event={event}
+        event={eventDetail}
       />
     </div>
   );

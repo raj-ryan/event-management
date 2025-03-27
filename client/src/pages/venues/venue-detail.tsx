@@ -39,12 +39,8 @@ export default function VenueDetail() {
     isLoading, 
     error 
   } = useQuery<Venue>({
-    queryKey: ["/api/venues", params.id ? parseInt(params.id) : 0],
-    queryFn: async () => {
-      if (!params.id) throw new Error("Venue ID is required");
-      const res = await apiRequest("GET", `/api/venues/${params.id}`);
-      return res.json();
-    }
+    queryKey: ["/api/venues", params.id ? parseInt(params.id) : 0]
+    // Using the default queryFn from queryClient that handles API URL correctly
   });
   
   if (isLoading) {
