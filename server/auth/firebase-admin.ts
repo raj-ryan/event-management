@@ -1,9 +1,9 @@
-import * as admin from 'firebase-admin';
+import admin from 'firebase-admin';
 
 // Initialize Firebase Admin with service account credentials
 // In a production environment, you would use a service account key JSON file
 // For Replit, we'll use environment variables
-if (!admin.apps.length) {
+if (!admin.apps || admin.apps.length === 0) {
   admin.initializeApp({
     credential: admin.credential.cert({
       projectId: process.env.VITE_FIREBASE_PROJECT_ID,

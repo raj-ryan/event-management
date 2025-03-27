@@ -98,8 +98,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       try {
         if (firebaseUser) {
-          // User is signed in
-          const appUser = await createUserFromFirebaseUser(firebaseUser);
+          // User is signed in, authenticate with our backend
+          const appUser = await authenticateWithBackend(firebaseUser);
           if (appUser) {
             setUser(appUser);
           }
