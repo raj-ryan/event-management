@@ -26,8 +26,7 @@ export default function VenuesPage() {
             </p>
           </div>
           <div className="space-x-2 flex">
-            <Button variant="outline" onClick={() => navigate("/")}>Back to Home</Button>
-            <Button onClick={() => navigate("/dashboard")}>Dashboard</Button>
+            <Button variant="outline" onClick={() => navigate("/dashboard")}>Back to Dashboard</Button>
           </div>
         </div>
 

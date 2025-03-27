@@ -14,7 +14,7 @@ export default function BookingsPage() {
               View and manage your event bookings
             </p>
           </div>
-          <Button onClick={() => navigate("/")}>Back to Home</Button>
+          <Button onClick={() => navigate("/dashboard")}>Back to Dashboard</Button>
         </div>
 
         <div className="text-center p-12 border rounded-lg bg-white shadow-sm">

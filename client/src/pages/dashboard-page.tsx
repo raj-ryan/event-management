@@ -133,8 +133,7 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => { setActiveTab("overview"); }}>Overview</Button>
-            <Button variant="outline" onClick={() => navigate("/")}>Back to Home</Button>
+            <Button variant="outline" onClick={() => setActiveTab("overview")}>Back to Overview</Button>
             <Button variant="destructive" size="sm" onClick={handleLogout}>Logout</Button>
           </div>
         </div>

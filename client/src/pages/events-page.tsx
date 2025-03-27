@@ -143,8 +143,7 @@ export default function EventsPage() {
                 Create New Event
               </Button>
             )}
-            <Button variant="outline" onClick={() => navigate("/")}>Back to Home</Button>
-            <Button onClick={() => navigate("/dashboard")}>Dashboard</Button>
+            <Button variant="outline" onClick={() => navigate("/dashboard")}>Back to Dashboard</Button>
           </div>
         </div>
 

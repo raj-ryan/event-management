@@ -82,7 +82,7 @@ export default function AuthPage() {
             description: "Welcome to the admin dashboard!",
           });
           setIsSubmitting(false);
-          navigate("/dashboard?admin=true");
+          navigate("/dashboard?role=admin");
         }, 1500);
       } else {
         // Admin login failed
@@ -103,7 +103,7 @@ export default function AuthPage() {
           description: "Welcome back to EventZen!",
         });
         setIsSubmitting(false);
-        navigate("/dashboard");
+        navigate("/dashboard?role=user");
       }, 1500);
     }
   }
@@ -117,7 +117,7 @@ export default function AuthPage() {
         description: "Welcome to EventZen!",
       });
       setIsSubmitting(false);
-      navigate("/dashboard");
+      navigate("/dashboard?role=user");
     }, 1500);
   }
 
