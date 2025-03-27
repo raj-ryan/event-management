@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { CalendarRange, Users, MapPin, Bell, UserCog, Calendar, UserPlus, Truck, UsersRound } from "lucide-react";
+import { CalendarRange, Users, MapPin, Bell, UserCog, Calendar, UserPlus, Truck, UsersRound, Plus } from "lucide-react";
 
 export default function DashboardPage() {
   const { toast } = useToast();
@@ -172,9 +172,131 @@ export default function DashboardPage() {
                 <CardDescription>Update your user information</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground mb-4">
-                  Profile management functionality will be implemented in future updates.
-                </p>
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label htmlFor="firstName" className="text-sm font-medium">First Name</label>
+                        <input
+                          id="firstName"
+                          type="text"
+                          className="w-full p-2 border rounded-md"
+                          defaultValue={mockUser.firstName || ""}
+                          placeholder="Enter your first name"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label htmlFor="lastName" className="text-sm font-medium">Last Name</label>
+                        <input
+                          id="lastName"
+                          type="text"
+                          className="w-full p-2 border rounded-md"
+                          defaultValue={mockUser.lastName || ""}
+                          placeholder="Enter your last name"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label htmlFor="email" className="text-sm font-medium">Email</label>
+                      <input
+                        id="email"
+                        type="email"
+                        className="w-full p-2 border rounded-md"
+                        defaultValue={mockUser.email}
+                        placeholder="Enter your email"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label htmlFor="username" className="text-sm font-medium">Username</label>
+                      <input
+                        id="username"
+                        type="text"
+                        className="w-full p-2 border rounded-md"
+                        defaultValue={mockUser.username}
+                        placeholder="Enter your username"
+                        disabled
+                      />
+                      <p className="text-xs text-muted-foreground">Username cannot be changed</p>
+                    </div>
+                  </div>
+                  
+                  <div className="border-t pt-6">
+                    <h3 className="text-lg font-medium mb-4">Change Password</h3>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label htmlFor="currentPassword" className="text-sm font-medium">Current Password</label>
+                        <input
+                          id="currentPassword"
+                          type="password"
+                          className="w-full p-2 border rounded-md"
+                          placeholder="Enter your current password"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label htmlFor="newPassword" className="text-sm font-medium">New Password</label>
+                        <input
+                          id="newPassword"
+                          type="password"
+                          className="w-full p-2 border rounded-md"
+                          placeholder="Enter your new password"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label htmlFor="confirmPassword" className="text-sm font-medium">Confirm New Password</label>
+                        <input
+                          id="confirmPassword"
+                          type="password"
+                          className="w-full p-2 border rounded-md"
+                          placeholder="Confirm your new password"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="border-t pt-6">
+                    <h3 className="text-lg font-medium mb-4">Notification Preferences</h3>
+                    <div className="space-y-2">
+                      <div className="flex items-center">
+                        <input
+                          id="emailNotifications"
+                          type="checkbox"
+                          className="h-4 w-4 mr-2"
+                          defaultChecked
+                        />
+                        <label htmlFor="emailNotifications" className="text-sm">Receive email notifications</label>
+                      </div>
+                      
+                      <div className="flex items-center">
+                        <input
+                          id="smsNotifications"
+                          type="checkbox"
+                          className="h-4 w-4 mr-2"
+                        />
+                        <label htmlFor="smsNotifications" className="text-sm">Receive SMS notifications</label>
+                      </div>
+                      
+                      <div className="flex items-center">
+                        <input
+                          id="marketingEmails"
+                          type="checkbox"
+                          className="h-4 w-4 mr-2"
+                          defaultChecked
+                        />
+                        <label htmlFor="marketingEmails" className="text-sm">Receive marketing emails</label>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline">Cancel</Button>
+                    <Button>Save Changes</Button>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -186,9 +308,176 @@ export default function DashboardPage() {
                 <CardDescription>Event and venue performance metrics</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground mb-4">
-                  Analytics functionality will be implemented in future updates.
-                </p>
+                <div className="space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <Card className="p-4 bg-primary/10">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <CardTitle className="text-lg mb-1">Total Events</CardTitle>
+                          <p className="text-3xl font-bold">12</p>
+                        </div>
+                        <Calendar className="h-10 w-10 text-primary" />
+                      </div>
+                    </Card>
+                    
+                    <Card className="p-4 bg-primary/10">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <CardTitle className="text-lg mb-1">Total Bookings</CardTitle>
+                          <p className="text-3xl font-bold">87</p>
+                        </div>
+                        <CalendarRange className="h-10 w-10 text-primary" />
+                      </div>
+                    </Card>
+                    
+                    <Card className="p-4 bg-primary/10">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <CardTitle className="text-lg mb-1">Total Attendees</CardTitle>
+                          <p className="text-3xl font-bold">245</p>
+                        </div>
+                        <Users className="h-10 w-10 text-primary" />
+                      </div>
+                    </Card>
+                    
+                    <Card className="p-4 bg-primary/10">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <CardTitle className="text-lg mb-1">Revenue</CardTitle>
+                          <p className="text-3xl font-bold">$18,245</p>
+                        </div>
+                        <svg className="h-10 w-10 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="12" y1="1" x2="12" y2="23"></line>
+                          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                        </svg>
+                      </div>
+                    </Card>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h3 className="text-xl font-semibold mb-4">Popular Events</h3>
+                      <div className="space-y-4">
+                        <div className="flex items-center">
+                          <div className="w-full bg-muted rounded-md h-10 relative">
+                            <div className="absolute top-0 left-0 h-10 bg-primary rounded-md" style={{ width: '80%' }}></div>
+                            <div className="absolute top-0 left-0 h-10 w-full flex items-center justify-between px-3">
+                              <span className="text-white font-medium">Annual Tech Conference</span>
+                              <span className="text-white font-medium">80%</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center">
+                          <div className="w-full bg-muted rounded-md h-10 relative">
+                            <div className="absolute top-0 left-0 h-10 bg-primary rounded-md" style={{ width: '65%' }}></div>
+                            <div className="absolute top-0 left-0 h-10 w-full flex items-center justify-between px-3">
+                              <span className="text-white font-medium">Summer Wedding Showcase</span>
+                              <span className="text-white font-medium">65%</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center">
+                          <div className="w-full bg-muted rounded-md h-10 relative">
+                            <div className="absolute top-0 left-0 h-10 bg-primary rounded-md" style={{ width: '45%' }}></div>
+                            <div className="absolute top-0 left-0 h-10 w-full flex items-center justify-between px-3">
+                              <span className="text-white font-medium">Garden Concert Series</span>
+                              <span className="text-white font-medium">45%</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center">
+                          <div className="w-full bg-muted rounded-md h-10 relative">
+                            <div className="absolute top-0 left-0 h-10 bg-primary rounded-md" style={{ width: '30%' }}></div>
+                            <div className="absolute top-0 left-0 h-10 w-full flex items-center justify-between px-3">
+                              <span className="text-white font-medium">Charity Fundraiser Gala</span>
+                              <span className="text-white font-medium">30%</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-xl font-semibold mb-4">Top Venues</h3>
+                      <div className="space-y-4">
+                        <div className="flex items-center">
+                          <div className="w-full bg-muted rounded-md h-10 relative">
+                            <div className="absolute top-0 left-0 h-10 bg-primary rounded-md" style={{ width: '75%' }}></div>
+                            <div className="absolute top-0 left-0 h-10 w-full flex items-center justify-between px-3">
+                              <span className="text-white font-medium">Grand Ballroom</span>
+                              <span className="text-white font-medium">75%</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center">
+                          <div className="w-full bg-muted rounded-md h-10 relative">
+                            <div className="absolute top-0 left-0 h-10 bg-primary rounded-md" style={{ width: '60%' }}></div>
+                            <div className="absolute top-0 left-0 h-10 w-full flex items-center justify-between px-3">
+                              <span className="text-white font-medium">Convention Center</span>
+                              <span className="text-white font-medium">60%</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center">
+                          <div className="w-full bg-muted rounded-md h-10 relative">
+                            <div className="absolute top-0 left-0 h-10 bg-primary rounded-md" style={{ width: '50%' }}></div>
+                            <div className="absolute top-0 left-0 h-10 w-full flex items-center justify-between px-3">
+                              <span className="text-white font-medium">Rooftop Garden</span>
+                              <span className="text-white font-medium">50%</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center">
+                          <div className="w-full bg-muted rounded-md h-10 relative">
+                            <div className="absolute top-0 left-0 h-10 bg-primary rounded-md" style={{ width: '25%' }}></div>
+                            <div className="absolute top-0 left-0 h-10 w-full flex items-center justify-between px-3">
+                              <span className="text-white font-medium">Ocean View Terrace</span>
+                              <span className="text-white font-medium">25%</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-xl font-semibold mb-4">Monthly Revenue</h3>
+                    <div className="h-64 bg-muted rounded-md flex items-end p-4">
+                      <div className="h-30% bg-primary w-8 rounded-t-md mx-2"></div>
+                      <div className="h-45% bg-primary w-8 rounded-t-md mx-2"></div>
+                      <div className="h-60% bg-primary w-8 rounded-t-md mx-2"></div>
+                      <div className="h-40% bg-primary w-8 rounded-t-md mx-2"></div>
+                      <div className="h-50% bg-primary w-8 rounded-t-md mx-2"></div>
+                      <div className="h-65% bg-primary w-8 rounded-t-md mx-2"></div>
+                      <div className="h-90% bg-primary w-8 rounded-t-md mx-2"></div>
+                      <div className="h-75% bg-primary w-8 rounded-t-md mx-2"></div>
+                      <div className="h-60% bg-primary w-8 rounded-t-md mx-2"></div>
+                      <div className="h-80% bg-primary w-8 rounded-t-md mx-2"></div>
+                      <div className="h-70% bg-primary w-8 rounded-t-md mx-2"></div>
+                      <div className="h-55% bg-primary w-8 rounded-t-md mx-2"></div>
+                    </div>
+                    <div className="flex justify-between mt-2 text-xs text-muted-foreground">
+                      <div>Jan</div>
+                      <div>Feb</div>
+                      <div>Mar</div>
+                      <div>Apr</div>
+                      <div>May</div>
+                      <div>Jun</div>
+                      <div>Jul</div>
+                      <div>Aug</div>
+                      <div>Sep</div>
+                      <div>Oct</div>
+                      <div>Nov</div>
+                      <div>Dec</div>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -214,9 +503,82 @@ export default function DashboardPage() {
                 <CardDescription>Register and manage event attendees</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground mb-4">
-                  Attendee management functionality will be implemented in future updates.
-                </p>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card className="p-4">
+                      <CardTitle className="text-lg mb-2">Pending Check-ins</CardTitle>
+                      <div className="text-sm text-muted-foreground">
+                        <ul className="space-y-2">
+                          <li className="flex justify-between items-center">
+                            <span>John Doe - Annual Tech Conference</span>
+                            <Button variant="outline" size="sm">Check In</Button>
+                          </li>
+                          <li className="flex justify-between items-center">
+                            <span>Sarah Doe - Annual Tech Conference</span>
+                            <Button variant="outline" size="sm">Check In</Button>
+                          </li>
+                          <li className="flex justify-between items-center">
+                            <span>Jane Smith - Summer Wedding Showcase</span>
+                            <Button variant="outline" size="sm">Check In</Button>
+                          </li>
+                        </ul>
+                      </div>
+                    </Card>
+                    
+                    <Card className="p-4">
+                      <CardTitle className="text-lg mb-2">Recent Check-ins</CardTitle>
+                      <div className="text-sm text-muted-foreground">
+                        <p>No recent check-ins to display</p>
+                      </div>
+                    </Card>
+                  </div>
+                  
+                  <div className="mt-6">
+                    <h3 className="text-xl font-semibold mb-4">All Registered Attendees</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="bg-muted text-left">
+                            <th className="p-2">Name</th>
+                            <th className="p-2">Email</th>
+                            <th className="p-2">Event</th>
+                            <th className="p-2">Check-in Status</th>
+                            <th className="p-2">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-t">
+                            <td className="p-2">John Doe</td>
+                            <td className="p-2">john@example.com</td>
+                            <td className="p-2">Annual Tech Conference</td>
+                            <td className="p-2"><span className="bg-amber-100 text-amber-800 px-2 py-1 rounded-full text-xs">Pending</span></td>
+                            <td className="p-2">
+                              <Button variant="outline" size="sm">Check In</Button>
+                            </td>
+                          </tr>
+                          <tr className="border-t">
+                            <td className="p-2">Sarah Doe</td>
+                            <td className="p-2">sarah@example.com</td>
+                            <td className="p-2">Annual Tech Conference</td>
+                            <td className="p-2"><span className="bg-amber-100 text-amber-800 px-2 py-1 rounded-full text-xs">Pending</span></td>
+                            <td className="p-2">
+                              <Button variant="outline" size="sm">Check In</Button>
+                            </td>
+                          </tr>
+                          <tr className="border-t">
+                            <td className="p-2">Jane Smith</td>
+                            <td className="p-2">jane@example.com</td>
+                            <td className="p-2">Summer Wedding Showcase</td>
+                            <td className="p-2"><span className="bg-amber-100 text-amber-800 px-2 py-1 rounded-full text-xs">Pending</span></td>
+                            <td className="p-2">
+                              <Button variant="outline" size="sm">Check In</Button>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -228,9 +590,95 @@ export default function DashboardPage() {
                 <CardDescription>Assign vendors to events</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground mb-4">
-                  Vendor management functionality will be implemented in future updates.
-                </p>
+                <div className="space-y-4">
+                  <div className="flex justify-end mb-4">
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add New Vendor
+                    </Button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Card className="p-4">
+                      <CardTitle className="text-lg mb-2">Elite Catering</CardTitle>
+                      <div className="text-sm space-y-2">
+                        <p><strong>Type:</strong> Catering</p>
+                        <p><strong>Contact:</strong> contact@elitecatering.com</p>
+                        <p><strong>Phone:</strong> 212-555-1234</p>
+                        <div className="mt-4">
+                          <strong>Assigned to:</strong>
+                          <ul className="list-disc pl-5 mt-1">
+                            <li>Summer Wedding Showcase</li>
+                            <li>Garden Concert Series</li>
+                          </ul>
+                        </div>
+                        <div className="flex justify-end mt-4 space-x-2">
+                          <Button variant="outline" size="sm">Edit</Button>
+                          <Button variant="destructive" size="sm">Remove</Button>
+                        </div>
+                      </div>
+                    </Card>
+                    
+                    <Card className="p-4">
+                      <CardTitle className="text-lg mb-2">Sound Masters</CardTitle>
+                      <div className="text-sm space-y-2">
+                        <p><strong>Type:</strong> Audio/Visual</p>
+                        <p><strong>Contact:</strong> info@soundmasters.com</p>
+                        <p><strong>Phone:</strong> 415-555-6789</p>
+                        <div className="mt-4">
+                          <strong>Assigned to:</strong>
+                          <ul className="list-disc pl-5 mt-1">
+                            <li>Annual Tech Conference</li>
+                            <li>Garden Concert Series</li>
+                          </ul>
+                        </div>
+                        <div className="flex justify-end mt-4 space-x-2">
+                          <Button variant="outline" size="sm">Edit</Button>
+                          <Button variant="destructive" size="sm">Remove</Button>
+                        </div>
+                      </div>
+                    </Card>
+                    
+                    <Card className="p-4">
+                      <CardTitle className="text-lg mb-2">Perfect Decor</CardTitle>
+                      <div className="text-sm space-y-2">
+                        <p><strong>Type:</strong> Decoration</p>
+                        <p><strong>Contact:</strong> hello@perfectdecor.com</p>
+                        <p><strong>Phone:</strong> 310-555-4321</p>
+                        <div className="mt-4">
+                          <strong>Assigned to:</strong>
+                          <ul className="list-disc pl-5 mt-1">
+                            <li>Summer Wedding Showcase</li>
+                          </ul>
+                        </div>
+                        <div className="flex justify-end mt-4 space-x-2">
+                          <Button variant="outline" size="sm">Edit</Button>
+                          <Button variant="destructive" size="sm">Remove</Button>
+                        </div>
+                      </div>
+                    </Card>
+                    
+                    <Card className="p-4">
+                      <CardTitle className="text-lg mb-2">Photo Memories</CardTitle>
+                      <div className="text-sm space-y-2">
+                        <p><strong>Type:</strong> Photography</p>
+                        <p><strong>Contact:</strong> bookings@photomemories.com</p>
+                        <p><strong>Phone:</strong> 650-555-7890</p>
+                        <div className="mt-4">
+                          <strong>Assigned to:</strong>
+                          <ul className="list-disc pl-5 mt-1">
+                            <li>Annual Tech Conference</li>
+                            <li>Summer Wedding Showcase</li>
+                          </ul>
+                        </div>
+                        <div className="flex justify-end mt-4 space-x-2">
+                          <Button variant="outline" size="sm">Edit</Button>
+                          <Button variant="destructive" size="sm">Remove</Button>
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -242,9 +690,110 @@ export default function DashboardPage() {
                 <CardDescription>Real-time event participation monitoring</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground mb-4">
-                  Live tracking functionality will be implemented in future updates.
-                </p>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card className="p-4 bg-green-50 border-green-200">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <CardTitle className="text-lg mb-1">Active Events</CardTitle>
+                          <p className="text-3xl font-bold text-green-600">2</p>
+                        </div>
+                        <Calendar className="h-10 w-10 text-green-500" />
+                      </div>
+                    </Card>
+                    
+                    <Card className="p-4 bg-blue-50 border-blue-200">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <CardTitle className="text-lg mb-1">Total Attendees</CardTitle>
+                          <p className="text-3xl font-bold text-blue-600">5</p>
+                        </div>
+                        <Users className="h-10 w-10 text-blue-500" />
+                      </div>
+                    </Card>
+                    
+                    <Card className="p-4 bg-amber-50 border-amber-200">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <CardTitle className="text-lg mb-1">Check-ins Today</CardTitle>
+                          <p className="text-3xl font-bold text-amber-600">0</p>
+                        </div>
+                        <UsersRound className="h-10 w-10 text-amber-500" />
+                      </div>
+                    </Card>
+                  </div>
+                  
+                  <h3 className="text-xl font-semibold mt-6 mb-4">Active Events</h3>
+                  <div className="space-y-4">
+                    <Card className="p-4">
+                      <div className="flex justify-between items-center mb-4">
+                        <CardTitle className="text-lg">Annual Tech Conference</CardTitle>
+                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Live Now</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <h4 className="font-medium mb-2">Attendance Statistics</h4>
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm">Total Registered</span>
+                              <span className="font-medium">3</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm">Checked In</span>
+                              <span className="font-medium">0</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm">Attendance Rate</span>
+                              <span className="font-medium">0%</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <h4 className="font-medium mb-2">Recent Activity</h4>
+                          <div className="text-sm text-muted-foreground">
+                            <p>No recent check-ins</p>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                    
+                    <Card className="p-4">
+                      <div className="flex justify-between items-center mb-4">
+                        <CardTitle className="text-lg">Summer Wedding Showcase</CardTitle>
+                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Live Now</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <h4 className="font-medium mb-2">Attendance Statistics</h4>
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm">Total Registered</span>
+                              <span className="font-medium">2</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm">Checked In</span>
+                              <span className="font-medium">0</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm">Attendance Rate</span>
+                              <span className="font-medium">0%</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <h4 className="font-medium mb-2">Recent Activity</h4>
+                          <div className="text-sm text-muted-foreground">
+                            <p>No recent check-ins</p>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
