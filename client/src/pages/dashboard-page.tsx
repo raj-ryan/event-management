@@ -1,39 +1,28 @@
-import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function DashboardPage() {
-  const { user, logout, isLoading } = useAuth();
   const { toast } = useToast();
   const [_, navigate] = useLocation();
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate("/");
-      toast({
-        title: "Logged out",
-        description: "You have been successfully logged out.",
-      });
-    } catch (error) {
-      toast({
-        title: "Logout failed",
-        description: "There was an issue logging out.",
-        variant: "destructive",
-      });
-    }
+  // Simulated user data
+  const mockUser = {
+    username: "testuser",
+    email: "testuser@example.com",
+    firstName: "Test",
+    lastName: "User",
+    role: "user"
   };
 
-  if (isLoading || !user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const handleLogout = () => {
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out.",
+    });
+    navigate("/");
+  };
 
   return (
     <div className="flex flex-col items-center min-h-screen p-4">
@@ -44,7 +33,7 @@ export default function DashboardPage() {
               Dashboard
             </h1>
             <p className="text-muted-foreground">
-              Welcome back, {user?.firstName || user?.username || "User"}
+              Welcome back, {mockUser.firstName || mockUser.username}
             </p>
           </div>
           <Button onClick={() => navigate("/")}>Back to Home</Button>
@@ -57,10 +46,10 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <p><strong>Username:</strong> {user?.username}</p>
-              <p><strong>Email:</strong> {user?.email}</p>
-              {user?.firstName && <p><strong>Name:</strong> {user?.firstName} {user?.lastName}</p>}
-              <p><strong>Role:</strong> {user?.role}</p>
+              <p><strong>Username:</strong> {mockUser.username}</p>
+              <p><strong>Email:</strong> {mockUser.email}</p>
+              {mockUser.firstName && <p><strong>Name:</strong> {mockUser.firstName} {mockUser.lastName}</p>}
+              <p><strong>Role:</strong> {mockUser.role}</p>
             </div>
           </CardContent>
         </Card>
