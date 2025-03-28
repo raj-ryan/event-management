@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  netlify-functions:
+    build:
+      context: ..
+      dockerfile: netlify/Dockerfile
+    ports:
+      - "8888:8888"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - VITE_FIREBASE_API_KEY=${VITE_FIREBASE_API_KEY}
+      - VITE_FIREBASE_APP_ID=${VITE_FIREBASE_APP_ID}
+      - VITE_FIREBASE_PROJECT_ID=${VITE_FIREBASE_PROJECT_ID}
+      - VITE_STRIPE_PUBLIC_KEY=${VITE_STRIPE_PUBLIC_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - SESSION_SECRET=${SESSION_SECRET:-eventzen-session-secret}
+    restart: unless-stopped
+    networks:
+      - netlify-network
+
+networks:
+  netlify-network:
+    driver: bridge

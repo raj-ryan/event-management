@@ -1,0 +1,177 @@
+# **EventZen - Comprehensive Development Guide**
+
+## **Technology Stack**
+- **Frontend:** React.js (Vite for performance)
+- **Backend:** Node.js (Express.js)
+- **Database:** PostgreSQL (via Supabase)
+- **Authentication:** JWT-based authentication (Supabase Auth)
+- **Deployment:** Netlify (Frontend), Supabase (Backend & DB)
+- **Real-time Updates:** WebSockets (Socket.io)
+- **Payment Integration:** Stripe API
+- **State Management:** Redux Toolkit
+
+---
+
+## **System Architecture**
+1. **Frontend (React.js + Vite):** Handles UI for users and admins
+2. **Backend (Node.js + Express.js):** Manages business logic and APIs
+3. **Database (PostgreSQL via Supabase):** Stores event, venue, attendee, vendor, and booking data
+4. **Authentication:** Supabase Auth with JWT for secure user and admin login
+5. **Hosting & Deployment:** Netlify for frontend, Supabase for backend and database
+6. **Real-time Communication:** WebSockets for live updates
+7. **Payments & Ticketing:** Stripe API for online payments
+
+---
+
+## **Step-by-Step Development Process**
+
+### **1. Project Initialization**
+#### **Frontend Setup (React.js + Vite)**
+- Install dependencies:
+  ```sh
+  npm create vite@latest eventzen --template react
+  cd eventzen
+  npm install react-router-dom axios @reduxjs/toolkit react-redux styled-components socket.io-client stripe
+  ```
+- Create folder structure:
+  ```sh
+  src/
+  ├── components/
+  ├── pages/
+  ├── redux/
+  ├── services/
+  ├── utils/
+  ├── App.js
+  ├── main.jsx
+  ```
+
+#### **Backend Setup (Node.js - Express.js)**
+- Initialize backend:
+  ```sh
+  mkdir backend
+  cd backend
+  npm init -y
+  npm install express cors dotenv jsonwebtoken bcryptjs pg socket.io stripe
+  ```
+- Create folder structure:
+  ```sh
+  backend/
+  ├── controllers/
+  ├── models/
+  ├── routes/
+  ├── middleware/
+  ├── config/
+  ├── server.js
+  ├── .env
+  ```
+
+---
+
+### **2. Authentication & Authorization**
+#### **User Authentication (Supabase Auth)**
+- Implement JWT-based authentication for users
+- Secure login/logout in Express.js
+- React: Implement login/register forms and authentication context
+
+#### **Admin Authentication**
+- Admin credentials managed by backend team via Supabase roles
+- Restrict access to admin dashboard using middleware
+
+---
+
+### **3. Frontend Development**
+#### **Login/Register Page (User & Admin)**
+- Forms with validation (React Hook Form / Yup)
+- API calls to login/register endpoints
+- Redirect users based on roles
+
+#### **User Dashboard Features**
+- **View Venues:** Fetch and display venues
+- **Manage Bookings:** CRUD operations on user bookings
+- **Manage Profile:** Update user info, view booking history
+- **Live Notifications:** WebSocket-powered event updates
+
+#### **Admin Dashboard Features**
+- **Venue Management:** Add, edit, delete venues
+- **Event Management:** Schedule, edit, delete events
+- **Attendee Management:** Register attendees, send reminders
+- **Vendor Management:** Assign vendors to events
+- **Live Attendee Tracking:** Real-time event participation monitoring
+
+---
+
+### **4. Backend API Development**
+#### **Routes and Controllers**
+- **User Routes:** Register/Login, fetch profile, update profile
+- **Admin Routes:** CRUD operations for events, venues, attendees, vendors
+- **Booking Routes:** Create, update, delete bookings
+- **Payments Routes:** Stripe integration for ticket purchases
+- **Real-time Routes:** WebSocket API for live updates
+
+#### **Example Express.js Route for User Authentication**
+```javascript
+const express = require('express');
+const router = express.Router();
+const { loginUser, registerUser } = require('../controllers/authController');
+router.post('/register', registerUser);
+router.post('/login', loginUser);
+module.exports = router;
+```
+
+---
+
+### **5. Database Schema Design (PostgreSQL via Supabase)**
+#### **Tables**
+1. **Users** (UserID, Name, Email, Password, Role)
+2. **Admins** (AdminID, Name, Email, Password)
+3. **Events** (EventID, Name, Date, VenueID, Capacity, Price, LiveStatus)
+4. **Venues** (VenueID, Name, Capacity, Amenities, Price)
+5. **Bookings** (BookingID, UserID, EventID, Status, PaymentStatus)
+6. **Vendors** (VendorID, Name, Service, Contact)
+7. **Attendees** (AttendeeID, Name, Email, EventID)
+8. **Payments** (PaymentID, UserID, BookingID, Amount, Status, Timestamp)
+
+---
+
+### **6. Deployment & Hosting**
+#### **Frontend Deployment (Netlify)**
+- Deploy React.js app on Netlify
+- Use environment variables for API keys
+
+#### **Backend Deployment (Supabase Functions)**
+- Host Node.js API on Supabase
+- Connect to PostgreSQL database via Supabase
+- Set up automatic scaling
+
+#### **Security Measures**
+- Use HTTPS & secure cookies
+- Implement API rate limiting
+- Hash passwords using bcrypt
+- Restrict CORS policy
+- Implement JWT expiration and refresh tokens
+
+---
+
+### **7. Real-Time Features (WebSockets)**
+- **Live Notifications:** Send event updates to users in real time
+- **Live Attendee Tracking:** Admins can monitor attendee check-ins
+- **Real-Time Chat:** User discussions and Q&A for events
+
+---
+
+### **8. Payment Integration (Stripe)**
+- **Ticket Purchase:** Users can buy tickets using Stripe
+- **Transaction History:** Users can view payment records
+- **Refund Management:** Admins can process refunds
+
+---
+
+### **9. Enhancements & Future Scope**
+- **AI-Powered Recommendations:** Suggest events based on user behavior
+- **Mobile App Development:** Flutter/React Native version
+- **Gamification:** Reward points for attending events
+- **AI Chatbot:** Automated event assistant for recommendations
+
+---
+
+This guide provides a step-by-step breakdown for developers to implement EventZen efficiently, ensuring a scalable, secure, and feature-rich event management system.
